@@ -1,0 +1,16 @@
+{
+  "regions": {
+    "primary": "eu-west-2",
+    "secondary": "eu-west-3"
+  },
+  "locations": {
+    "primary": {
+      "city": "London",
+      "address": "25 Shaftesbury Avenue, London W1D 7EQ, United Kingdom"
+    },
+    "secondary": {
+      "city": "Paris",
+      "address": "47 Avenue des Champs-Élysées, 75008 Paris, France"
+    }
+  }
+}
