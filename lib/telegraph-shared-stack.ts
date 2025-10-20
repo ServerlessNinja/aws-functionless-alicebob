@@ -15,12 +15,12 @@ export class TelegraphSharedStack extends cdk.Stack {
 
     // SSM parameters
     new StringParameter(this, 'AddressBookEntry1', {
-      parameterName: '/Telegraph/AddressBook/Bob/Office',
+      parameterName: '/AddressBook/Bob/Office',
       stringValue: locations.primary?.address || ''
     });
 
     new StringParameter(this, 'AddressBookEntry2', {
-      parameterName: '/Telegraph/AddressBook/Alice/Office',
+      parameterName: '/AddressBook/Alice/Office',
       stringValue: locations.secondary?.address || ''
     });
 
@@ -45,19 +45,19 @@ export class TelegraphSharedStack extends cdk.Stack {
 
     // CloudWatch Dashboard for EventBridge events
     const dashboard = new cloudwatch.Dashboard(this, 'CwDashboard', {
-      dashboardName: 'Telegraph',
+      dashboardName: 'Telegraph Dashboard',
       periodOverride: cloudwatch.PeriodOverride.AUTO,
       start: "-PT1H"
     });
 
     const queryLines = {
       primary: [
-        'fields detail.telegramId as TelegramId, detail.sender.name as From, detail.recipient.name as To, detail.message.topic as Topic, detail.status as Status, detail.documentType as Type, detail.updatedAt as UpdatedAt',
+        'fields detail.telegram_id as TelegramId, detail.from.name as From, detail.to.name as To, detail.message as Message, detail.status as Status, detail.priority as Priority, detail.sent_at as SentAt',
         'filter source = "Telegraph"',
         'sort @timestamp desc'
       ],
       secondary: [
-        'fields detail.telegramId as TelegramId, detail.sender.name as From, detail.recipient.name as To, detail.topic as Topic, detail.status as Status, detail.reaction as Reaction, detail.updatedAt as UpdatedAt',
+        'fields detail.telegram_id as TelegramId, detail.from.name as From, detail.to.name as To, detail.message as message, detail.status as Status, detail.reaction as Reaction, detail.received_at as ReceivedAt',
         'filter source = "Telegraph"',
         'sort @timestamp desc'
       ]

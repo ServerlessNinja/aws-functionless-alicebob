@@ -22,17 +22,29 @@ export class TelegraphSecondaryStack extends cdk.Stack {
       description: 'Personal diary of Alice',
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       secretObjectValue: {
-        heartsBob: cdk.SecretValue.unsafePlainText('0'),
-        // heartPurple: cdk.SecretValue.unsafePlainText(Buffer.from('💜').toString('base64')),
-        // heartBlue: cdk.SecretValue.unsafePlainText(Buffer.from('💙').toString('base64')),
-        // heartYellow: cdk.SecretValue.unsafePlainText(Buffer.from('💛').toString('base64')),
+        Who: cdk.SecretValue.unsafePlainText(''),
+        When: cdk.SecretValue.unsafePlainText(''),
+        Message: cdk.SecretValue.unsafePlainText(''),
+        Reaction: cdk.SecretValue.unsafePlainText(''),
       }  
+    });
+
+    const queue = new cdk.aws_sqs.Queue(this, 'PostponeQueue', {
+      queueName: 'PostponeTrayQueue.fifo',
+      fifo: true,
+      retentionPeriod: cdk.Duration.days(14),
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // Step Functions state machine
     const machine = new states.StateMachine(this, 'TransmissionAliceStateMachine', {
       stateMachineName: 'TransmissionAlice',
-      definitionBody: states.DefinitionBody.fromFile('src/state-machines/transmission-alice-sm.yaml'),
+      definitionBody: states.DefinitionBody.fromFile('src/state-machines/transmission-alice.asl.yaml'),
+      definitionSubstitutions: {
+        EVENT_BUS_NAME: bus.eventBusName,
+        SECRET_ARN: secret.secretArn,
+        QUEUE_URL: queue.queueUrl,
+      },
       timeout: cdk.Duration.minutes(5),
       tracingEnabled: true,
       logs: {
@@ -55,15 +67,32 @@ export class TelegraphSecondaryStack extends cdk.Stack {
           "events:PutEvents",
           "secretsmanager:GetSecretValue",
           "secretsmanager:PutSecretValue",
+          "sqs:SendMessage",
         ],
         resources: [
           `arn:aws:dynamodb:*:${this.account}:table/TelegraphArchive`,
-          `arn:aws:ssm:*:${this.account}:parameter/Telegraph/*`,
+          `arn:aws:ssm:*:${this.account}:parameter/AddressBook/*`,
           `arn:aws:events:*:${this.account}:event-bus/TelegraphStation`,
-          `arn:aws:secretsmanager:*:${this.account}:secret:PersonalDiary*`
+          `arn:aws:secretsmanager:*:${this.account}:secret:PersonalDiary*`,
+          queue.queueArn,
         ],
       })
     );
+
+    // IAM permissions for state machine role
+    machine.addToRolePolicy(
+      new PolicyStatement({
+        actions: [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords",
+          "xray:GetSamplingRules",
+          "xray:GetSamplingTargets",
+          "comprehend:DetectSentiment",
+          "comprehend:BatchDetectSentiment",
+        ],
+        resources: [ "*" ],
+      })
+    )
 
     // CloudWatch log group for EventBridge events
     const logGroup = new logs.LogGroup(this, 'TelegraphEventsLogGroup', {
@@ -89,13 +118,13 @@ export class TelegraphSecondaryStack extends cdk.Stack {
     });
 
     // EventBridge event rule to send local events to CloudWatch Logs
-    new events.Rule(this, 'TelegramReceivedRule', {
-      ruleName: 'TelegramReceived',
-      description: 'Log events related to collected letters',
+    new events.Rule(this, 'TelegramReadRule', {
+      ruleName: 'TelegramRead',
+      description: 'Log events related to received telegrams',
       eventBus: bus,
       eventPattern: {
         source: [ "Telegraph" ],
-        detailType: [ "TelegramReceived" ]
+        detailType: [ "TelegramRead" ]
       },
       enabled: true,
       targets: [

@@ -50,7 +50,7 @@ States:
   Positive Emoji:
     Type: Pass
     Assign:
-      reaction: 😍
+      reaction: "😍"
     Next: Store in Telegram Archive
   Store in Telegram Archive:
     Type: Task
@@ -77,7 +77,7 @@ States:
   Update Personal Diary:
     Type: Task
     Arguments:
-      SecretId: PersonalDiary
+      SecretId: ${SECRET_ARN}
       SecretString: '{% $string({ "Who": $from_name, "When": $received_at, "Message":
         $message, "Sentiment": $sentiment, "Reaction": $reaction }, true) %}'
     Resource: arn:aws:states:::aws-sdk:secretsmanager:putSecretValue
@@ -88,10 +88,10 @@ States:
         Next: Fail
   Notify Telegraph:
     Type: Task
-    Resource: arn:aws:states:::events:putEvents.waitForTaskToken
+    Resource: arn:aws:states:::events:putEvents
     Arguments:
       Entries:
-        - EventBusName: TelegraphStation
+        - EventBusName: ${EVENT_BUS_NAME}
           Source: Telegraph
           DetailType: TelegramRead
           Detail:
@@ -131,11 +131,11 @@ States:
     Type: Task
     Resource: arn:aws:states:::sqs:sendMessage
     Arguments:
-      QueueUrl: ${PostponeQueue}
+      QueueUrl: ${QUEUE_URL}
       MessageBody: "{% $states.input %}"
     End: true
   Neutral Emoji:
     Type: Pass
     Assign:
-      reaction: 🙄
+      reaction: "🙄"
     Next: Store in Telegram Archive

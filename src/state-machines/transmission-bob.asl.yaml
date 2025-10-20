@@ -159,7 +159,7 @@ States:
         Next: Fail
     Arguments:
       Entries:
-        - EventBusName: TelegraphStation
+        - EventBusName: ${EVENT_BUS_NAME}
           Source: Telegraph
           DetailType: NewTelegram
           Detail:

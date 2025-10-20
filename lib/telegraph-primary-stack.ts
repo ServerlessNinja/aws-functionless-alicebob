@@ -19,8 +19,11 @@ export class TelegraphPrimaryStack extends cdk.Stack {
 
     // Step Functions state machine
     const machine = new states.StateMachine(this, 'TransmissionBobStateMachine', {
-      stateMachineName: 'TransmissionBob',
-      definitionBody: states.DefinitionBody.fromFile('src/state-machines/transmission-bob-sm.yaml'),
+      stateMachineName: 'Transmission-Bob',
+      definitionBody: states.DefinitionBody.fromFile('src/state-machines/transmission-bob.asl.yaml'),
+      definitionSubstitutions: {
+        EVENT_BUS_NAME: bus.eventBusName,
+      },
       timeout: cdk.Duration.minutes(5),
       tracingEnabled: true,
       logs: {
@@ -41,21 +44,35 @@ export class TelegraphPrimaryStack extends cdk.Stack {
           "dynamodb:UpdateItem",
           "ssm:GetParameter*",
           "events:PutEvents",
-          "states:StartExecution",
-          "states:StopExecution",
-          "states:DescribeExecution",
-          "bedrock:InvokeModel",
+          // "states:StartExecution",
+          // "states:StopExecution",
+          // "states:DescribeExecution",
+          // "bedrock:InvokeModel",
         ],
         resources: [
           `arn:aws:dynamodb:*:${this.account}:table/TelegraphArchive`,
-          `arn:aws:ssm:*:${this.account}:parameter/Telegraph/*`,
+          `arn:aws:ssm:*:${this.account}:parameter/AddressBook/*`,
           `arn:aws:events:*:${this.account}:event-bus/TelegraphStation`,
-          `arn:aws:states:*:${this.account}:stateMachine:TransmissionBob`,
-          `arn:aws:states:*:${this.account}:execution:TransmissionBob:*`,
-          `arn:aws:bedrock:${this.region}::foundation-model/amazon.nova*`,
+          // `arn:aws:states:*:${this.account}:stateMachine:Transmission*`,
+          // `arn:aws:states:*:${this.account}:execution:Transmission*:*`,
         ],
       })
     );
+
+    // IAM permissions for state machine role
+    machine.addToRolePolicy(
+      new PolicyStatement({
+        actions: [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords",
+          "xray:GetSamplingRules",
+          "xray:GetSamplingTargets",
+          "translate:TranslateText",
+          "translate:TranslateDocument"
+        ],
+        resources: [ "*" ],
+      })
+    )
 
     // EventBridge event rule to trigger state machine
     new events.Rule(this, 'ImportLettersRule', {
