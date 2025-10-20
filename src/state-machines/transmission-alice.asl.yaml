@@ -1,0 +1,141 @@
+Comment: Transmission state machine (Alice)
+StartAt: Open Telegram
+TimeoutSeconds: 120
+QueryLanguage: JSONata
+States:
+  Open Telegram:
+    Type: Wait
+    Seconds: 5
+    Next: Check Category
+    Assign:
+      document_type: "{% $states.input.Detail.document_type %}"
+      service_level: "{% $states.input.Detail.service_level %}"
+      telegram_id: "{% $states.input.Detail.telegram_id %}"
+      category: "{% $states.input.Detail.category %}"
+      status: RECEIVED
+      received_at: "{% $states.context.State.EnteredTime %}"
+  Check Category:
+    Type: Choice
+    Choices:
+      - Next: Personal Message
+        Condition: '{% (($category) = ("PERSONAL")) %}'
+    Default: Other Business
+  Personal Message:
+    Type: Pass
+    Next: Detect Sentiment
+    Assign:
+      from_name: "{% $states.input.Detail.from_name %}"
+      from_address: "{% $states.input.Detail.from_address %}"
+      to_name: "{% $states.input.Detail.to_name %}"
+      to_address: "{% $states.input.Detail.to_address %}"
+      message: "{% $states.input.Detail.message %}"
+      language: "{% $states.input.Detail.language %}"
+      updated_at: "{% $states.context.State.EnteredTime %}"
+      status: READ
+  Detect Sentiment:
+    Type: Task
+    Arguments:
+      LanguageCode: "{% $language %}"
+      Text: "{% $message %}"
+    Resource: arn:aws:states:::aws-sdk:comprehend:detectSentiment
+    Next: Add Reaction
+    Assign:
+      sentiment: "{% $states.result.Sentiment %}"
+  Add Reaction:
+    Type: Choice
+    Choices:
+      - Next: Positive Emoji
+        Condition: '{% ($sentiment) = ("POSITIVE") %}'
+    Default: Neutral Emoji
+  Positive Emoji:
+    Type: Pass
+    Assign:
+      reaction: 😍
+    Next: Store in Telegram Archive
+  Store in Telegram Archive:
+    Type: Task
+    Resource: arn:aws:states:::dynamodb:updateItem
+    Arguments:
+      TableName: TelegraphArchive
+      Key:
+        telegram_id:
+          S.$: "{% $telegram_id %}"
+      UpdateExpression: SET status = :telegramStatus, updated_at = :updatedAt,
+        reaction = :reaction
+      ExpressionAttributeValues:
+        :updatedAt:
+          S.$: "{% $updated_at %}"
+        :telegramStatus:
+          S.$: "{% $status %}"
+        :reaction:
+          S.$: "{% $reaction %}"
+    Catch:
+      - ErrorEquals:
+          - States.ALL
+        Next: Fail
+    Next: Update Personal Diary
+  Update Personal Diary:
+    Type: Task
+    Arguments:
+      SecretId: PersonalDiary
+      SecretString: '{% $string({ "Who": $from_name, "When": $received_at, "Message":
+        $message, "Sentiment": $sentiment, "Reaction": $reaction }, true) %}'
+    Resource: arn:aws:states:::aws-sdk:secretsmanager:putSecretValue
+    Next: Notify Telegraph
+    Catch:
+      - ErrorEquals:
+          - States.ALL
+        Next: Fail
+  Notify Telegraph:
+    Type: Task
+    Resource: arn:aws:states:::events:putEvents.waitForTaskToken
+    Arguments:
+      Entries:
+        - EventBusName: TelegraphStation
+          Source: Telegraph
+          DetailType: TelegramRead
+          Detail:
+            document_type: "{% $document_type %}"
+            service_level: "{% $service_level %}"
+            telegram_id: "{% $telegram_id %}"
+            category: "{% $category %}"
+            status: "{% $status %}"
+            received_at: "{% $received_at %}"
+            from:
+              name: "{% $from_name %}"
+              address: "{% $from_address %}"
+            to:
+              name: "{% $to_name %}"
+              address: "{% $to_address %}"
+            message: "{% $message %}"
+            sentiment: "{% $sentiment %}"
+            reaction: "{% $reaction %}"
+    Next: Success
+    Catch:
+      - ErrorEquals:
+          - States.ALL
+        Next: Fail
+    Assign:
+      event_id: "{% $states.result.Entries[0].EventId %}"
+  Success:
+    Type: Succeed
+    Output:
+      telegram_id: "{% $telegram_id %}"
+      event_id: "{% $event_id %}"
+  Fail:
+    Type: Fail
+  Other Business:
+    Type: Pass
+    Next: Pending Tray
+  Pending Tray:
+    Type: Task
+    Resource: arn:aws:states:::sqs:sendMessage
+    Arguments:
+      QueueUrl: ${PostponeQueue}
+      MessageBody: "{% $states.input %}"
+    End: true
+  Neutral Emoji:
+    Type: Pass
+    Assign:
+      reaction: 🙄
+    Next: Store in Telegram Archive

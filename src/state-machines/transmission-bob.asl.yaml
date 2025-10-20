@@ -1,0 +1,187 @@
+Comment: Transmission state machine (Bob)
+StartAt: Validate Fields
+TimeoutSeconds: 120
+QueryLanguage: JSONata
+States:
+  Validate Fields:
+    Type: Pass
+    Next: Check Priority
+    Assign:
+      from_name: "{% $states.input.from %}"
+      to_name: "{% $states.input.to %}"
+      message: "{% $states.input.message %}"
+      language: "{% $states.input.language %}"
+      word_count: "{% $count($split($states.input.message, ' ')) %}"
+  Check Priority:
+    Type: Choice
+    Default: Standard Counter
+    Choices:
+      - Next: Express Counter
+        Condition: '{% ($states.input.priority) = ("URGENT") %}'
+  Express Counter:
+    Type: Pass
+    Next: Search Address Book
+    Assign:
+      service_level: Express
+      price: 0.3
+      currency: EUR
+  Standard Counter:
+    Type: Wait
+    Seconds: 10
+    Next: Search Address Book
+    Assign:
+      service_level: Standard
+      price: 0.1
+      currency: EUR
+  Search Address Book:
+    Comment: Get configuration stored in Parameters Store
+    Type: Task
+    Next: Translate Message
+    Resource: arn:aws:states:::aws-sdk:ssm:getParameters
+    Catch:
+      - ErrorEquals:
+          - States.ALL
+        Next: Fail
+    Assign:
+      from_address: "{% $states.result.Parameters[0].Value %}"
+      to_address: "{% $states.result.Parameters[1].Value %}"
+    Arguments:
+      Names:
+        - "{% '/AddressBook/' & $from_name & '/Office' %}"
+        - "{% '/AddressBook/' & $to_name & '/Office' %}"
+  Translate Message:
+    Type: Task
+    Arguments:
+      SourceLanguageCode: en
+      TargetLanguageCode: "{% $language %}"
+      Text: "{% $message %}"
+      Settings:
+        Brevity: ON
+        Formality: INFORMAL
+    Resource: arn:aws:states:::aws-sdk:translate:translateText
+    Next: Accept Telegram
+    Retry:
+      - ErrorEquals:
+          - States.ALL
+        BackoffRate: 2
+        IntervalSeconds: 1
+        MaxAttempts: 3
+    Catch:
+      - ErrorEquals:
+          - States.ALL
+        Next: Fail
+    Assign:
+      translated: "{% $states.result.TranslatedText %}"
+      word_count: "{% $count($split($states.result.TranslatedText, ' ')) %}"
+  Accept Telegram:
+    Comment: Add letter ID and status to the document
+    Type: Pass
+    Next: Save in Telegram Archive
+    Assign:
+      document_type: TELEGRAM
+      category: PERSONAL
+      status: NEW
+      telegram_id: "{% $uuid() %}"
+      created_at: "{% $states.context.State.EnteredTime %}"
+      charges: "{% $currency & $price * $word_count %}"
+      paid: true
+  Fail:
+    Type: Fail
+    Error: TransmissionError
+    Comment: Transmission failed
+    Cause: "{% $states.context.State.Name %}"
+  Save in Telegram Archive:
+    Comment: Add or update records in DynamoDB table
+    Type: Task
+    Resource: arn:aws:states:::dynamodb:putItem
+    Retry:
+      - ErrorEquals:
+          - States.ALL
+        BackoffRate: 2
+        IntervalSeconds: 1
+        MaxAttempts: 2
+    Catch:
+      - ErrorEquals:
+          - States.ALL
+        Next: Fail
+    TimeoutSeconds: 10
+    HeartbeatSeconds: 3
+    Next: Transmit Telegram
+    Arguments:
+      TableName: TelegramArchive
+      Item:
+        telegram_id:
+          S.$: "{% $telegram_id %}"
+        category:
+          S.$: "{% $category %}"
+        status:
+          S.$: "{% $status %}"
+        from:
+          M:
+            name:
+              S.$: "{% $from_name %}"
+            address:
+              S.$: "{% $from_address %}"
+        to:
+          M:
+            name:
+              S.$: "{% $to_name %}"
+            address:
+              S.$: "{% $to_address %}"
+        message:
+          M:
+            original:
+              S.$: "{% $message %}"
+            translated:
+              S.$: "{% $translated %}"
+        cost:
+          M:
+            serviceLevel:
+              S.$: "{% $service_level %}"
+            charges:
+              S.$: "{% $charges %}"
+  Transmit Telegram:
+    Comment: Send array of events to event bus in secondary region
+    Type: Task
+    Resource: arn:aws:states:::events:putEvents
+    Retry:
+      - ErrorEquals:
+          - States.ALL
+        BackoffRate: 2
+        IntervalSeconds: 1
+        MaxAttempts: 2
+    TimeoutSeconds: 10
+    HeartbeatSeconds: 3
+    Next: Success
+    Catch:
+      - ErrorEquals:
+          - States.ALL
+        Next: Fail
+    Arguments:
+      Entries:
+        - EventBusName: TelegraphStation
+          Source: Telegraph
+          DetailType: NewTelegram
+          Detail:
+            document_type: "{% $document_type %}"
+            service_level: "{% $service_level %}"
+            telegram_id: "{% $telegram_id %}"
+            category: "{% $category %}"
+            status: "{% $status %}"
+            sent_at: "{% $states.context.State.EnteredTime %}"
+            from:
+              name: "{% $from_name %}"
+              address: "{% $from_address %}"
+            to:
+              name: "{% $to_name %}"
+              address: "{% $to_address %}"
+            message: "{% $translated %}"
+            language: "{% $language %}"
+    Assign:
+      event_id: "{% $states.result.Entries[0].EventId %}"
+  Success:
+    Type: Succeed
+    Output:
+      telegram_id: "{% $telegram_id %}"
+      event_id: "{% $event_id %}"
+    Comment: Transmission successfull
