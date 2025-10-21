@@ -36,8 +36,8 @@ export class TelegraphAliceStack extends cdk.Stack {
       secretObjectValue: {
         Who: cdk.SecretValue.unsafePlainText(''),
         When: cdk.SecretValue.unsafePlainText(''),
-        Message: cdk.SecretValue.unsafePlainText(''),
-        Reaction: cdk.SecretValue.unsafePlainText(''),
+        What: cdk.SecretValue.unsafePlainText(''),
+        Note: cdk.SecretValue.unsafePlainText(''),
       }  
     });
 
@@ -102,8 +102,8 @@ export class TelegraphAliceStack extends cdk.Stack {
           "xray:PutTelemetryRecords",
           "xray:GetSamplingRules",
           "xray:GetSamplingTargets",
-          "comprehend:DetectSentiment",
-          "comprehend:BatchDetectSentiment",
+          // "comprehend:DetectSentiment",
+          // "comprehend:BatchDetectSentiment",
         ],
         resources: [ "*" ],
       })

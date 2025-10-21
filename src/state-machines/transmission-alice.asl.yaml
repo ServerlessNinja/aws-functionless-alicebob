@@ -24,39 +24,16 @@ States:
     Comment: Check category of the telegram personal vs business
   Personal Message:
     Type: Pass
-    Next: Detect Sentiment
+    Next: Store in Telegram Archive
     Assign:
       from_name: "{% $states.input.from.name %}"
       from_address: "{% $states.input.from.address %}"
       to_name: "{% $states.input.to.name %}"
       to_address: "{% $states.input.to.address %}"
       message: "{% $states.input.message.translated %}"
-      language: "{% $states.input.message.language %}"
       updated_at: "{% $states.context.State.EnteredTime %}"
       status: DELIVERED
-  Detect Sentiment:
-    Type: Task
-    Arguments:
-      LanguageCode: "{% $language %}"
-      Text: "{% $message %}"
-    Resource: arn:aws:states:::aws-sdk:comprehend:detectSentiment
-    Next: Add Reaction
-    Assign:
-      sentiment: "{% $states.result.Sentiment %}"
-    Comment: Detect sentiment of the telegram message
-  Add Reaction:
-    Type: Choice
-    Choices:
-      - Next: Warm Emoji
-        Condition: '{% (($sentiment) = ("POSITIVE") or ($sentiment) = ("NEUTRAL")) %}'
-    Default: Cold Emoji
-    Comment: Add reaction based on the sentiment
-  Warm Emoji:
-    Type: Pass
-    Assign:
-      reaction: "😍"
-    Next: Store in Telegram Archive
-    Comment: Add positive emoji reaction
+      reaction: 😍
   Store in Telegram Archive:
     Type: Task
     Resource: arn:aws:states:::dynamodb:updateItem
@@ -84,8 +61,8 @@ States:
     Type: Task
     Arguments:
       SecretId: ${SECRET_ARN}
-      SecretString: '{% $string({ "Who": $from_name, "When": $received_at, "Message":
-        $message, "Sentiment": $sentiment, "Reaction": $reaction }, true) %}'
+      SecretString: '{% $string({ "Who": $from_name, "When": $received_at, "What":
+        $message, "Note": $reaction }, true) %}'
     Resource: arn:aws:states:::aws-sdk:secretsmanager:putSecretValue
     Next: Notify Telegraph
     Catch:
@@ -116,7 +93,6 @@ States:
               address: "{% $to_address %}"
             message:
               translated: "{% $message %}"
-            sentiment: "{% $sentiment %}"
             reaction: "{% $reaction %}"
     Next: Success
     Catch:
@@ -139,6 +115,8 @@ States:
   Other Business:
     Type: Pass
     Next: Postpone
+    Assign:
+      reaction: 🥶
   Postpone:
     Type: Wait
     Seconds: 10
@@ -153,9 +131,3 @@ States:
       MessageGroupId: "{% $category %}"
     End: true
     Comment: Store telegram in SQS queue for further processing
-  Cold Emoji:
-    Type: Pass
-    Assign:
-      reaction: "🥶"
-    Next: Store in Telegram Archive
-    Comment: Add neutral emoji reaction

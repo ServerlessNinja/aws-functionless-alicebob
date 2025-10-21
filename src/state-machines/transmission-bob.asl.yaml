@@ -11,13 +11,13 @@ States:
       to_name: "{% $states.input.to %}"
       message: "{% $states.input.message %}"
       category: "{% $states.input.category %}"
-      language: "{% $states.input.language %}"
   Convert Telegram:
     Type: Pass
     Next: Check Priority
     Assign:
       word_count: "{% $count($split($message, ' ')) %}"
       message: "{% $uppercase($replace($message, '.', ' STOP')) %}"
+      language: fr
   Check Priority:
     Type: Choice
     Default: Standard Counter
@@ -31,7 +31,7 @@ States:
       service_level: EXPRESS
       price: 0.2
       translation: 0.08
-      currency: "£"
+      currency: £
   Standard Counter:
     Type: Wait
     Seconds: 10
@@ -40,7 +40,7 @@ States:
       service_level: STANDARD
       price: 0.1
       translation: 0.04
-      currency: "£"
+      currency: £
   Search Address Book:
     Comment: Get configuration stored in Parameter Store
     Type: Task
