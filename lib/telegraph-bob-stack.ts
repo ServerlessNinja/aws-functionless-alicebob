@@ -31,7 +31,7 @@ export class TelegraphBobStack extends cdk.Stack {
 
     // Step Functions state machine
     const machine = new states.StateMachine(this, 'TransmissionBobStateMachine', {
-      stateMachineName: 'Transmission-Bob',
+      stateMachineName: 'TransmissionBob',
       definitionBody: states.DefinitionBody.fromFile('src/state-machines/transmission-bob.asl.yaml'),
       definitionSubstitutions: {
         EVENT_BUS_NAME: bus.eventBusName,

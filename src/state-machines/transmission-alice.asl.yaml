@@ -47,11 +47,11 @@ States:
   Add Reaction:
     Type: Choice
     Choices:
-      - Next: Positive Emoji
-        Condition: '{% ($sentiment) = ("POSITIVE") %}'
-    Default: Neutral Emoji
+      - Next: Warm Emoji
+        Condition: '{% (($sentiment) = ("POSITIVE") or ($sentiment) = ("NEUTRAL")) %}'
+    Default: Cold Emoji
     Comment: Add reaction based on the sentiment
-  Positive Emoji:
+  Warm Emoji:
     Type: Pass
     Assign:
       reaction: "😍"
@@ -138,7 +138,12 @@ States:
     Cause: "{% $states.context.State.Name %}"
   Other Business:
     Type: Pass
+    Next: Postpone
+  Postpone:
+    Type: Wait
+    Seconds: 10
     Next: Pending Tray
+    Comment: Postpone telegram
   Pending Tray:
     Type: Task
     Resource: arn:aws:states:::sqs:sendMessage
@@ -148,9 +153,9 @@ States:
       MessageGroupId: "{% $category %}"
     End: true
     Comment: Store telegram in SQS queue for further processing
-  Neutral Emoji:
+  Cold Emoji:
     Type: Pass
     Assign:
-      reaction: "🙄"
+      reaction: "🥶"
     Next: Store in Telegram Archive
     Comment: Add neutral emoji reaction

@@ -4,7 +4,7 @@
   "detail": {
     "from": "Bob",
     "to": "Alice",
-    "message": "Hello darling! Flight to Tokyo booked. I can't wait to see you in March. Love, Bob",
+    "message": "Hello Alice. Flight to Tokyo booked. See you next week for a dinner date.",
     "language": "ja",
     "category": "PERSONAL",
     "priority": "URGENT"
