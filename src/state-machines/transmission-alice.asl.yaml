@@ -31,7 +31,7 @@ States:
       message: "{% $states.input.message %}"
       language: "{% $states.input.language %}"
       updated_at: "{% $states.context.State.EnteredTime %}"
-      status: READ
+      status: PROCESSED
   Detect Sentiment:
     Type: Task
     Arguments:
@@ -60,12 +60,11 @@ States:
       Key:
         telegram_id:
           S: "{% $telegram_id %}"
-      UpdateExpression: SET status = :telegramStatus, updated_at = :updatedAt,
-        reaction = :reaction
+      UpdateExpression: SET delivery_status = :delivery_status, updated_at = :updated_at, reaction = :reaction
       ExpressionAttributeValues:
-        :updatedAt:
+        :updated_at:
           S: "{% $updated_at %}"
-        :telegramStatus:
+        :delivery_status:
           S: "{% $status %}"
         :reaction:
           S: "{% $reaction %}"
