@@ -1,7 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-// import * as s3 from 'aws-cdk-lib/aws-s3';
-// import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
@@ -13,15 +11,16 @@ export class TelegraphSharedStack extends cdk.Stack {
     const regions = this.node.tryGetContext('regions');
     const locations = this.node.tryGetContext('locations');
 
-    // SSM parameters
-    new StringParameter(this, 'AddressBookEntry1', {
+    // SSM parameter
+    new StringParameter(this, 'AddressBookBob', {
       parameterName: '/AddressBook/Bob/Office',
-      stringValue: locations.primary?.address || ''
+      stringValue: locations.bob?.address || ''
     });
 
-    new StringParameter(this, 'AddressBookEntry2', {
+    // SSM parameter
+    new StringParameter(this, 'AddressBookAlice', {
       parameterName: '/AddressBook/Alice/Office',
-      stringValue: locations.secondary?.address || ''
+      stringValue: locations.alice?.address || ''
     });
 
     // DynamoDB global table
@@ -39,48 +38,50 @@ export class TelegraphSharedStack extends cdk.Stack {
         pointInTimeRecoveryEnabled: false
       },
       replicas: [
-        { region: regions.secondary }
+        { region: regions.alice }
       ],
     });
 
     // CloudWatch Dashboard for EventBridge events
-    const dashboard = new cloudwatch.Dashboard(this, 'TelegraphDashboard', {
-      dashboardName: 'TelegraphTransmissions',
+    const dashboard = new cloudwatch.Dashboard(this, 'TransmissionsDashboard', {
+      dashboardName: 'Transmissions',
       periodOverride: cloudwatch.PeriodOverride.AUTO,
       start: "-PT1H"
     });
 
+    // CloudWatch Logs Insights queries
     const queryLines = {
-      primary: [
-        'fields detail.telegram_id as TelegramId, detail.from.name as From, detail.to.name as To, detail.message as Message, detail.status as Status, detail.priority as Priority, detail.sent_at as SentAt',
+      bob: [
+        'fields detail.telegram_id as TelegramId, detail.from.name as From, detail.to.name as To, detail.message.original as Message, detail.status as Status, detail.service_level as ServiceLevel, detail.sent_at as SentAt',
         'filter source = "Telegraph"',
         'sort @timestamp desc'
       ],
-      secondary: [
-        'fields detail.telegram_id as TelegramId, detail.from.name as From, detail.to.name as To, detail.message as message, detail.status as Status, detail.reaction as Reaction, detail.received_at as ReceivedAt',
+      alice: [
+        'fields detail.telegram_id as TelegramId, detail.from.name as From, detail.to.name as To, detail.message.translated as Message, detail.status as Status, detail.reaction as Reaction, detail.received_at as ReceivedAt',
         'filter source = "Telegraph"',
         'sort @timestamp desc'
       ]
     };
 
+    // CloudWatch Logs Insights widgets
     dashboard.addWidgets(
       new cloudwatch.LogQueryWidget({
-        title: `Telegraph Station ${locations.primary?.city}`,
+        title: `Telegraph Station ${locations.bob?.city}`,
         view: cloudwatch.LogQueryVisualizationType.TABLE,
         width: 24,
         height: 6,
         logGroupNames: [ '/aws/events/TelegraphStation' ],
-        region: regions.primary,
-        queryLines: queryLines.primary
+        region: regions.bob,
+        queryLines: queryLines.bob
       }),
       new cloudwatch.LogQueryWidget({
-        title: `Telegraph Station ${locations.secondary?.city}`,
+        title: `Telegraph Station ${locations.alice?.city}`,
         view: cloudwatch.LogQueryVisualizationType.TABLE,
         width: 24,
         height: 6,
         logGroupNames: [ '/aws/events/TelegraphStation' ],
-        region: regions.secondary,
-        queryLines: queryLines.secondary
+        region: regions.alice,
+        queryLines: queryLines.alice
       })
     );
 

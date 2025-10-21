@@ -1,0 +1,12 @@
+{
+  "source": "Telegraph",
+  "detail-type": "ComposeTelegram",
+  "detail": {
+    "from": "Bob",
+    "to": "Alice",
+    "message": "Hello Alice. Flight to Tokyo booked. See you next week for a dinner date.",
+    "language": "ja",
+    "category": "PERSONAL",
+    "priority": "URGENT"
+  }
+}

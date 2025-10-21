@@ -1,16 +1,16 @@
 {
   "regions": {
-    "primary": "eu-west-2",
-    "secondary": "eu-west-3"
+    "bob": "eu-west-2",
+    "alice": "ap-northeast-1"
   },
   "locations": {
-    "primary": {
+    "bob": {
       "city": "London",
       "address": "25 Shaftesbury Avenue, London W1D 7EQ, United Kingdom"
     },
-    "secondary": {
-      "city": "Paris",
-      "address": "47 Avenue des Champs-Élysées, 75008 Paris, France"
+    "alice": {
+      "city": "Tokyo",
+      "address": "3-15-8 Marunouchi, Chiyoda-ku, Tokyo 100-0005, Japan"
     }
   }
 }
