@@ -1,24 +1,28 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import { TelegraphPrimaryStack } from '../lib/telegraph-primary-stack';
-import { TelegraphSecondaryStack } from '../lib/telegraph-secondary-stack';
 import { TelegraphSharedStack } from '../lib/telegraph-shared-stack';
+import { TelegraphAliceStack } from '../lib/telegraph-alice-stack';
+import { TelegraphBobStack } from '../lib/telegraph-bob-stack';
 
 const app = new cdk.App();
 const regions = app.node.tryGetContext('regions');
 
+// Define shared stack (#1)
 const sharedStack = new TelegraphSharedStack(app, 'TelegraphSharedStack', {
-  env: { region: regions.primary }
+  env: { region: regions.bob }
 });
 
-const primaryStack = new TelegraphPrimaryStack(app, 'TelegraphPrimaryStack', {
-  env: { region: regions.primary }
+// Define Alice's stack (#2)
+const aliceStack = new TelegraphAliceStack(app, 'TelegraphAliceStack', {
+  env: { region: regions.alice }
 });
 
-const secondaryStack = new TelegraphSecondaryStack(app, 'TelegraphSecondaryStack', {
-  env: { region: regions.secondary }
+// Define Bob's stack (#3)
+const bobStack = new TelegraphBobStack(app, 'TelegraphBobStack', {
+  env: { region: regions.bob }
 });
 
-secondaryStack.addDependency(sharedStack);
-primaryStack.addDependency(sharedStack);
-primaryStack.addDependency(secondaryStack);
+// Set stack dependencies for deployment order
+aliceStack.addDependency(sharedStack);
+bobStack.addDependency(sharedStack);
+bobStack.addDependency(aliceStack);

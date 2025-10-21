@@ -6,7 +6,7 @@ import * as states from 'aws-cdk-lib/aws-stepfunctions';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 
-export class TelegraphPrimaryStack extends cdk.Stack {
+export class TelegraphBobStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
@@ -98,10 +98,10 @@ export class TelegraphPrimaryStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY
     });
 
-    // EventBridge event rule to send events to secondary event bus
+    // EventBridge event rule to send events to remote event bus
     new events.Rule(this, 'TransmitTelegramRule', {
       ruleName: 'TransmitTelegram',
-      description: 'Send events to event bus in secondary region',
+      description: 'Send events to remote event bus (cross-region)',
       eventBus: bus,
       eventPattern: {
         source: [ "Telegraph" ],
@@ -112,7 +112,7 @@ export class TelegraphPrimaryStack extends cdk.Stack {
         new targets.CloudWatchLogGroup(logGroup),
         new targets.EventBus(
           events.EventBus.fromEventBusArn(this, 'TelegraphStation2', 
-            `arn:aws:events:${regions.secondary}:${this.account}:event-bus/TelegraphStation`
+            `arn:aws:events:${regions.alice}:${this.account}:event-bus/TelegraphStation`
           )
         )
       ]

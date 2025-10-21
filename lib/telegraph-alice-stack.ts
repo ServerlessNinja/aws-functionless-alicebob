@@ -7,7 +7,7 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as secrets from 'aws-cdk-lib/aws-secretsmanager';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 
-export class TelegraphSecondaryStack extends cdk.Stack {
+export class TelegraphAliceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
@@ -29,6 +29,7 @@ export class TelegraphSecondaryStack extends cdk.Stack {
       }  
     });
 
+    // SQS queue for unprocessed telegrams
     const queue = new cdk.aws_sqs.Queue(this, 'PostponeQueue', {
       queueName: 'PostponeTrayQueue.fifo',
       fifo: true,
