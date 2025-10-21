@@ -4,8 +4,7 @@
   "detail": {
     "from": "Bob",
     "to": "Alice",
-    "message": "Hello Alice. Flight to Tokyo booked. See you next week for a dinner date.",
-    "language": "ja",
+    "message": "Hello darling. I'm coming to Paris next week. I cannot wait for our dinner date!",
     "category": "PERSONAL",
     "priority": "URGENT"
   }
