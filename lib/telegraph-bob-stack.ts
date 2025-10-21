@@ -12,9 +12,21 @@ export class TelegraphBobStack extends cdk.Stack {
 
     const regions = this.node.tryGetContext('regions');
 
-    // EventBridge event bus
+    // EventBridge custom event bus
     const bus = new events.EventBus(this, 'TelegraphStationBus', {
-      eventBusName: 'TelegraphStation'
+      eventBusName: 'TelegraphStation',
+      description: 'Event bus for Telegraph Station',
+    });
+
+    // EventBridge archive for custom event bus
+    new events.Archive(this, 'TelegraphStationArchive', {
+      sourceEventBus: bus,
+      eventPattern: {
+        source: [ "Telegraph" ],
+      },
+      archiveName: 'TelegraphStation',
+      description: 'Archive for Telegraph Station event bus',
+      retention: cdk.Duration.days(30),
     });
 
     // Step Functions state machine
@@ -45,17 +57,11 @@ export class TelegraphBobStack extends cdk.Stack {
           "dynamodb:UpdateItem",
           "ssm:GetParameter*",
           "events:PutEvents",
-          // "states:StartExecution",
-          // "states:StopExecution",
-          // "states:DescribeExecution",
-          // "bedrock:InvokeModel",
         ],
         resources: [
           `arn:aws:dynamodb:*:${this.account}:table/TelegraphArchive`,
           `arn:aws:ssm:*:${this.account}:parameter/AddressBook/*`,
           `arn:aws:events:*:${this.account}:event-bus/TelegraphStation`,
-          // `arn:aws:states:*:${this.account}:stateMachine:Transmission*`,
-          // `arn:aws:states:*:${this.account}:execution:Transmission*:*`,
         ],
       })
     );
@@ -75,14 +81,14 @@ export class TelegraphBobStack extends cdk.Stack {
       })
     )
 
-    // EventBridge event rule to trigger state machine
-    new events.Rule(this, 'StartTransmissionRule', {
-      ruleName: 'Start',
+    // EventBridge event rule to trigger state machine execution
+    new events.Rule(this, 'ComposeTelegramRule', {
+      ruleName: 'ComposeTelegram',
       description: 'Start execution of state machine TransmissionBob',
       eventBus: bus,
       eventPattern: {
         source: [ "Telegraph" ],
-        detailType: [ "Start" ]
+        detailType: [ "ComposeTelegram" ]
       },
       enabled: true,
       targets: [
@@ -105,7 +111,7 @@ export class TelegraphBobStack extends cdk.Stack {
       eventBus: bus,
       eventPattern: {
         source: [ "Telegraph" ],
-        detailType: [ "NewTelegram" ]
+        detailType: [ "IncomingTelegram" ]
       },
       enabled: true,
       targets: [

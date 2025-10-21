@@ -13,7 +13,19 @@ export class TelegraphAliceStack extends cdk.Stack {
 
     // EventBridge event bus
     const bus = new events.EventBus(this, 'TelegraphStationBus', {
-      eventBusName: 'TelegraphStation'
+      eventBusName: 'TelegraphStation',
+      description: 'Event bus for Telegraph Station',
+    });
+
+    // EventBridge archive for custom event bus
+    new events.Archive(this, 'TelegraphStationArchive', {
+      sourceEventBus: bus,
+      eventPattern: {
+        source: [ "Telegraph" ]
+      },
+      archiveName: 'TelegraphStation',
+      description: 'Archive for Telegraph Station event bus',
+      retention: cdk.Duration.days(30),
     });
 
     // Secrets Manager secret object
@@ -35,6 +47,7 @@ export class TelegraphAliceStack extends cdk.Stack {
       fifo: true,
       retentionPeriod: cdk.Duration.days(14),
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+      contentBasedDeduplication: true,
     });
 
     // Step Functions state machine
@@ -109,7 +122,7 @@ export class TelegraphAliceStack extends cdk.Stack {
       eventBus: bus,
       eventPattern: {
         source: [ "Telegraph" ],
-        detailType: [ "NewTelegram" ]
+        detailType: [ "IncomingTelegram" ]
       },
       enabled: true,
       targets: [
@@ -120,13 +133,13 @@ export class TelegraphAliceStack extends cdk.Stack {
     });
 
     // EventBridge event rule to send local events to CloudWatch Logs
-    new events.Rule(this, 'TelegramReadRule', {
-      ruleName: 'TelegramRead',
+    new events.Rule(this, 'TelegramDeliveredRule', {
+      ruleName: 'TelegramDelivered',
       description: 'Log events related to received telegrams',
       eventBus: bus,
       eventPattern: {
         source: [ "Telegraph" ],
-        detailType: [ "TelegramRead" ]
+        detailType: [ "TelegramDelivered" ]
       },
       enabled: true,
       targets: [

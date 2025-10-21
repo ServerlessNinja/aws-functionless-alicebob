@@ -5,13 +5,19 @@ QueryLanguage: JSONata
 States:
   Validate Fields:
     Type: Pass
-    Next: Check Priority
+    Next: Convert Telegram
     Assign:
       from_name: "{% $states.input.from %}"
       to_name: "{% $states.input.to %}"
       message: "{% $states.input.message %}"
+      category: "{% $states.input.category %}"
       language: "{% $states.input.language %}"
-      word_count: "{% $count($split($states.input.message, ' ')) %}"
+  Convert Telegram:
+    Type: Pass
+    Next: Check Priority
+    Assign:
+      word_count: "{% $count($split($message, ' ')) %}"
+      message: "{% $uppercase($replace($message, '.', ' STOP')) %}"
   Check Priority:
     Type: Choice
     Default: Standard Counter
@@ -58,8 +64,7 @@ States:
       TargetLanguageCode: "{% $language %}"
       Text: "{% $message %}"
       Settings:
-        Brevity: "ON"
-        Formality: "INFORMAL"
+        Formality: INFORMAL
     Resource: arn:aws:states:::aws-sdk:translate:translateText
     Next: Accept Telegram
     Retry:
@@ -73,7 +78,6 @@ States:
           - States.ALL
         Next: Fail
     Assign:
-      word_count: "{% $count($split($message, ' ')) %}"
       translated: "{% $states.result.TranslatedText %}"
   Accept Telegram:
     Comment: Add telegram ID and status to the document
@@ -81,12 +85,11 @@ States:
     Next: Save in Telegram Archive
     Assign:
       document_type: TELEGRAM
-      category: PERSONAL
-      status: IN_TRANSIT
+      status: TRANSMITTED
       telegram_id: "{% $uuid() %}"
       created_at: "{% $states.context.State.EnteredTime %}"
       charges: "{% ($price * $word_count) + ($translation * $word_count) %}"
-      payment: 'CASH'
+      payment: CASH
   Fail:
     Type: Fail
     Error: TransmissionError
@@ -167,7 +170,7 @@ States:
       Entries:
         - EventBusName: ${EVENT_BUS_NAME}
           Source: Telegraph
-          DetailType: NewTelegram
+          DetailType: IncomingTelegram
           Detail:
             document_type: "{% $document_type %}"
             service_level: "{% $service_level %}"
@@ -181,8 +184,10 @@ States:
             to:
               name: "{% $to_name %}"
               address: "{% $to_address %}"
-            message: "{% $translated %}"
-            language: "{% $language %}"
+            message:
+              original: "{% $message %}"
+              translated: "{% $translated %}"
+              language: "{% $language %}"
     Assign:
       event_id: "{% $states.result.Entries[0].EventId %}"
   Success:

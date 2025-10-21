@@ -43,8 +43,8 @@ export class TelegraphSharedStack extends cdk.Stack {
     });
 
     // CloudWatch Dashboard for EventBridge events
-    const dashboard = new cloudwatch.Dashboard(this, 'TelegraphDashboard', {
-      dashboardName: 'TelegraphTransmissions',
+    const dashboard = new cloudwatch.Dashboard(this, 'TransmissionsDashboard', {
+      dashboardName: 'Transmissions',
       periodOverride: cloudwatch.PeriodOverride.AUTO,
       start: "-PT1H"
     });
@@ -52,12 +52,12 @@ export class TelegraphSharedStack extends cdk.Stack {
     // CloudWatch Logs Insights queries
     const queryLines = {
       bob: [
-        'fields detail.telegram_id as TelegramId, detail.from.name as From, detail.to.name as To, detail.message as Message, detail.status as Status, detail.priority as Priority, detail.sent_at as SentAt',
+        'fields detail.telegram_id as TelegramId, detail.from.name as From, detail.to.name as To, detail.message.original as Message, detail.status as Status, detail.service_level as ServiceLevel, detail.sent_at as SentAt',
         'filter source = "Telegraph"',
         'sort @timestamp desc'
       ],
       alice: [
-        'fields detail.telegram_id as TelegramId, detail.from.name as From, detail.to.name as To, detail.message as message, detail.status as Status, detail.reaction as Reaction, detail.received_at as ReceivedAt',
+        'fields detail.telegram_id as TelegramId, detail.from.name as From, detail.to.name as To, detail.message.translated as Message, detail.status as Status, detail.reaction as Reaction, detail.received_at as ReceivedAt',
         'filter source = "Telegraph"',
         'sort @timestamp desc'
       ]
