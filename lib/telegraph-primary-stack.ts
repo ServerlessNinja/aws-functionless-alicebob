@@ -23,6 +23,7 @@ export class TelegraphPrimaryStack extends cdk.Stack {
       definitionBody: states.DefinitionBody.fromFile('src/state-machines/transmission-bob.asl.yaml'),
       definitionSubstitutions: {
         EVENT_BUS_NAME: bus.eventBusName,
+        DYNAMODB_TABLE_NAME: 'TelegraphArchive',
       },
       timeout: cdk.Duration.minutes(5),
       tracingEnabled: true,
@@ -75,18 +76,18 @@ export class TelegraphPrimaryStack extends cdk.Stack {
     )
 
     // EventBridge event rule to trigger state machine
-    new events.Rule(this, 'ImportLettersRule', {
-      ruleName: 'StartTransmission',
+    new events.Rule(this, 'StartTransmissionRule', {
+      ruleName: 'Start',
       description: 'Start execution of state machine TransmissionBob',
       eventBus: bus,
       eventPattern: {
-        source: [ "Telegrams" ],
-        detailType: [ "StartTransmission" ]
+        source: [ "Telegraph" ],
+        detailType: [ "Start" ]
       },
       enabled: true,
       targets: [
         new targets.SfnStateMachine(machine, {
-          input: events.RuleTargetInput.fromObject({})
+          input: events.RuleTargetInput.fromEventPath('$.detail')
         })
       ]
     });
@@ -98,8 +99,8 @@ export class TelegraphPrimaryStack extends cdk.Stack {
     });
 
     // EventBridge event rule to send events to secondary event bus
-    new events.Rule(this, 'SendTelegramRule', {
-      ruleName: 'SendTelegram',
+    new events.Rule(this, 'TransmitTelegramRule', {
+      ruleName: 'TransmitTelegram',
       description: 'Send events to event bus in secondary region',
       eventBus: bus,
       eventPattern: {

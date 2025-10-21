@@ -22,7 +22,7 @@ States:
     Type: Pass
     Next: Search Address Book
     Assign:
-      service_level: Express
+      service_level: EXPRESS
       price: 0.3
       currency: EUR
   Standard Counter:
@@ -56,8 +56,8 @@ States:
       TargetLanguageCode: "{% $language %}"
       Text: "{% $message %}"
       Settings:
-        Brevity: ON
-        Formality: INFORMAL
+        Brevity: "ON"
+        Formality: "INFORMAL"
     Resource: arn:aws:states:::aws-sdk:translate:translateText
     Next: Accept Telegram
     Retry:
@@ -108,38 +108,38 @@ States:
     HeartbeatSeconds: 3
     Next: Transmit Telegram
     Arguments:
-      TableName: TelegramArchive
+      TableName: ${DYNAMODB_TABLE_NAME}
       Item:
         telegram_id:
-          S.$: "{% $telegram_id %}"
+          S: "{% $telegram_id %}"
         category:
-          S.$: "{% $category %}"
+          S: "{% $category %}"
         status:
-          S.$: "{% $status %}"
+          S: "{% $status %}"
         from:
           M:
             name:
-              S.$: "{% $from_name %}"
+              S: "{% $from_name %}"
             address:
-              S.$: "{% $from_address %}"
+              S: "{% $from_address %}"
         to:
           M:
             name:
-              S.$: "{% $to_name %}"
+              S: "{% $to_name %}"
             address:
-              S.$: "{% $to_address %}"
+              S: "{% $to_address %}"
         message:
           M:
             original:
-              S.$: "{% $message %}"
+              S: "{% $message %}"
             translated:
-              S.$: "{% $translated %}"
+              S: "{% $translated %}"
         cost:
           M:
             serviceLevel:
-              S.$: "{% $service_level %}"
+              S: "{% $service_level %}"
             charges:
-              S.$: "{% $charges %}"
+              S: "{% $charges %}"
   Transmit Telegram:
     Comment: Send array of events to event bus in secondary region
     Type: Task

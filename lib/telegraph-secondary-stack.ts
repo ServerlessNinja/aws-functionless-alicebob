@@ -44,6 +44,7 @@ export class TelegraphSecondaryStack extends cdk.Stack {
         EVENT_BUS_NAME: bus.eventBusName,
         SECRET_ARN: secret.secretArn,
         QUEUE_URL: queue.queueUrl,
+        DYNAMODB_TABLE_NAME: 'TelegraphArchive',
       },
       timeout: cdk.Duration.minutes(5),
       tracingEnabled: true,

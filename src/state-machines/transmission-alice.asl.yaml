@@ -8,10 +8,10 @@ States:
     Seconds: 5
     Next: Check Category
     Assign:
-      document_type: "{% $states.input.Detail.document_type %}"
-      service_level: "{% $states.input.Detail.service_level %}"
-      telegram_id: "{% $states.input.Detail.telegram_id %}"
-      category: "{% $states.input.Detail.category %}"
+      document_type: "{% $states.input.document_type %}"
+      service_level: "{% $states.input.service_level %}"
+      telegram_id: "{% $states.input.telegram_id %}"
+      category: "{% $states.input.category %}"
       status: RECEIVED
       received_at: "{% $states.context.State.EnteredTime %}"
   Check Category:
@@ -24,12 +24,12 @@ States:
     Type: Pass
     Next: Detect Sentiment
     Assign:
-      from_name: "{% $states.input.Detail.from_name %}"
-      from_address: "{% $states.input.Detail.from_address %}"
-      to_name: "{% $states.input.Detail.to_name %}"
-      to_address: "{% $states.input.Detail.to_address %}"
-      message: "{% $states.input.Detail.message %}"
-      language: "{% $states.input.Detail.language %}"
+      from_name: "{% $states.input.from.name %}"
+      from_address: "{% $states.input.from.address %}"
+      to_name: "{% $states.input.to.name %}"
+      to_address: "{% $states.input.to.address %}"
+      message: "{% $states.input.message %}"
+      language: "{% $states.input.language %}"
       updated_at: "{% $states.context.State.EnteredTime %}"
       status: READ
   Detect Sentiment:
@@ -56,19 +56,19 @@ States:
     Type: Task
     Resource: arn:aws:states:::dynamodb:updateItem
     Arguments:
-      TableName: TelegraphArchive
+      TableName: ${DYNAMODB_TABLE_NAME}
       Key:
         telegram_id:
-          S.$: "{% $telegram_id %}"
+          S: "{% $telegram_id %}"
       UpdateExpression: SET status = :telegramStatus, updated_at = :updatedAt,
         reaction = :reaction
       ExpressionAttributeValues:
         :updatedAt:
-          S.$: "{% $updated_at %}"
+          S: "{% $updated_at %}"
         :telegramStatus:
-          S.$: "{% $status %}"
+          S: "{% $status %}"
         :reaction:
-          S.$: "{% $reaction %}"
+          S: "{% $reaction %}"
     Catch:
       - ErrorEquals:
           - States.ALL

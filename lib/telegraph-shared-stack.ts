@@ -28,7 +28,7 @@ export class TelegraphSharedStack extends cdk.Stack {
     new dynamodb.TableV2(this, 'TelegraphArchiveTable', {
       tableName: 'TelegraphArchive',
       partitionKey: { 
-        name: 'telegramId',
+        name: 'telegram_id',
         type: dynamodb.AttributeType.STRING
       },
       billing: dynamodb.Billing.onDemand(),
@@ -44,8 +44,8 @@ export class TelegraphSharedStack extends cdk.Stack {
     });
 
     // CloudWatch Dashboard for EventBridge events
-    const dashboard = new cloudwatch.Dashboard(this, 'CwDashboard', {
-      dashboardName: 'Telegraph Dashboard',
+    const dashboard = new cloudwatch.Dashboard(this, 'TelegraphDashboard', {
+      dashboardName: 'TelegraphTransmissions',
       periodOverride: cloudwatch.PeriodOverride.AUTO,
       start: "-PT1H"
     });
