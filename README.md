@@ -51,7 +51,7 @@ Modify the `cdk.context.json` file to change deployment regions:
 
 To start execution of state machines generate a custom EventBridge event in primary region. See sample event file:
 
-[compose-telegram.json](src/events/ompose-telegram.json)
+[compose-telegram.json](src/events/compose-telegram.json)
 
 Event detail structure:
 
