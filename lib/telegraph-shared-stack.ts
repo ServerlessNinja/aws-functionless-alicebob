@@ -24,7 +24,7 @@ export class TelegraphSharedStack extends cdk.Stack {
     });
 
     // DynamoDB global table
-    new dynamodb.TableV2(this, 'TelegraphArchiveTable', {
+    const table = new dynamodb.TableV2(this, 'TelegraphArchiveTable', {
       tableName: 'TelegraphArchive',
       partitionKey: { 
         name: 'telegram_id',
@@ -84,6 +84,10 @@ export class TelegraphSharedStack extends cdk.Stack {
         queryLines: queryLines.alice
       })
     );
+
+    // Add tags to selected resources for myApplications
+    cdk.Tags.of(table).add('cdk:filter', 'Demo');
+    cdk.Tags.of(dashboard).add('cdk:filter', 'Demo');
 
   }
 }

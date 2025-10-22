@@ -19,7 +19,7 @@ export class TelegraphBobStack extends cdk.Stack {
     });
 
     // EventBridge archive for custom event bus
-    new events.Archive(this, 'TelegraphStationArchive', {
+    const archive = new events.Archive(this, 'TelegraphStationArchive', {
       sourceEventBus: bus,
       eventPattern: {
         source: [ "Telegraph" ],
@@ -123,6 +123,11 @@ export class TelegraphBobStack extends cdk.Stack {
         )
       ]
     });
+
+    // Add tags to selected resources for myApplications
+    cdk.Tags.of(bus).add('cdk:filter', 'Demo');
+    cdk.Tags.of(archive).add('cdk:filter', 'Demo');
+    cdk.Tags.of(machine).add('cdk:filter', 'Demo');
 
   }
 }

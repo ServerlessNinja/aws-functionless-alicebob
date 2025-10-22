@@ -18,7 +18,7 @@ export class TelegraphAliceStack extends cdk.Stack {
     });
 
     // EventBridge archive for custom event bus
-    new events.Archive(this, 'TelegraphStationArchive', {
+    const archive = new events.Archive(this, 'TelegraphStationArchive', {
       sourceEventBus: bus,
       eventPattern: {
         source: [ "Telegraph" ]
@@ -102,8 +102,6 @@ export class TelegraphAliceStack extends cdk.Stack {
           "xray:PutTelemetryRecords",
           "xray:GetSamplingRules",
           "xray:GetSamplingTargets",
-          // "comprehend:DetectSentiment",
-          // "comprehend:BatchDetectSentiment",
         ],
         resources: [ "*" ],
       })
@@ -146,6 +144,12 @@ export class TelegraphAliceStack extends cdk.Stack {
         new targets.CloudWatchLogGroup(logGroup)
       ]
     });
+
+    // Add tags to selected resources for myApplications
+    cdk.Tags.of(bus).add('cdk:filter', 'Demo');
+    cdk.Tags.of(archive).add('cdk:filter', 'Demo');
+    cdk.Tags.of(machine).add('cdk:filter', 'Demo');
+    cdk.Tags.of(secret).add('cdk:filter', 'Demo');
 
   }
 }

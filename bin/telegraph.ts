@@ -26,3 +26,8 @@ const bobStack = new TelegraphBobStack(app, 'TelegraphBobStack', {
 aliceStack.addDependency(sharedStack);
 bobStack.addDependency(sharedStack);
 bobStack.addDependency(aliceStack);
+
+// Add tags to stacks and resources
+cdk.Tags.of(sharedStack).add('cdk:stack', 'Shared');
+cdk.Tags.of(aliceStack).add('cdk:stack', 'Alice');
+cdk.Tags.of(bobStack).add('cdk:stack', 'Bob');
