@@ -29,8 +29,8 @@ States:
     Next: Search Address Book
     Assign:
       service_level: EXPRESS
-      price: 0.2
-      translation: 0.08
+      price_per_word: 0.2
+      translation: 1
       currency: £
   Standard Counter:
     Type: Wait
@@ -38,8 +38,8 @@ States:
     Next: Search Address Book
     Assign:
       service_level: STANDARD
-      price: 0.1
-      translation: 0.04
+      price_per_word: 0.1
+      translation: 0.5
       currency: £
   Search Address Book:
     Comment: Get configuration stored in Parameter Store
@@ -88,7 +88,8 @@ States:
       status: TRANSMITTED
       telegram_id: "{% $uuid() %}"
       created_at: "{% $states.context.State.EnteredTime %}"
-      charges: "{% ($price * $word_count) + ($translation * $word_count) %}"
+      charges: "{% $currency & $string(($price_per_word * $word_count) +
+        ($translation)) %}"
       payment: CASH
   Fail:
     Type: Fail
@@ -144,7 +145,7 @@ States:
             serviceLevel:
               S: "{% $service_level %}"
             charges:
-              S: "{% $currency & $charges %}"
+              S: "{% $charges %}"
             payment:
               S: "{% $payment %}"
         created_at:

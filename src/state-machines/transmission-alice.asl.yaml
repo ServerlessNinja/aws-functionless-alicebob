@@ -18,19 +18,23 @@ States:
   Check Category:
     Type: Choice
     Choices:
-      - Next: Personal Message
+      - Next: Private Correspondence
         Condition: '{% (($category) = ("PERSONAL")) %}'
-    Default: Other Business
+    Default: Business Correspondence
     Comment: Check category of the telegram personal vs business
-  Personal Message:
+  Private Correspondence:
     Type: Pass
-    Next: Store in Telegram Archive
+    Next: Mark as Delivered
     Assign:
       from_name: "{% $states.input.from.name %}"
       from_address: "{% $states.input.from.address %}"
       to_name: "{% $states.input.to.name %}"
       to_address: "{% $states.input.to.address %}"
       message: "{% $states.input.message.translated %}"
+  Mark as Delivered:
+    Type: Pass
+    Next: Store in Telegram Archive
+    Assign:
       updated_at: "{% $states.context.State.EnteredTime %}"
       status: DELIVERED
       reaction: 😍
@@ -112,7 +116,7 @@ States:
     Type: Fail
     Error: TransmissionFailed
     Cause: "{% $states.context.State.Name %}"
-  Other Business:
+  Business Correspondence:
     Type: Pass
     Next: Postpone
     Assign:
