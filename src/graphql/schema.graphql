@@ -1,14 +1,13 @@
 type Telegram {
   from: UserName!
   to: UserName!
-  address: String!
   message: String!
-  createdAt: String
+  category: Category!
+  priority: Priority
 }
 
 type TelegraphStation {
-  eventBusName: String!
-  region: String!
+  eventBus: String!
   source: EventSource!
   detailType: EventDetailType!
   detail: Telegram!
@@ -17,6 +16,16 @@ type TelegraphStation {
 enum UserName {
   Bob
   Alice
+}
+
+enum Category {
+  PERSONAL
+  BUSINESS
+}
+
+enum Priority {
+  NORMAL
+  URGENT
 }
 
 enum EventSource {
@@ -32,9 +41,11 @@ enum EventDetailType {
 # }
 
 type Mutation {
-  composeTelegram(telegram: Telegram!): String!
+  # composeTelegram(telegram: Telegram!): String!
+  sendTelegram(telegraphStation: TelegraphStation!): String!
 }
 
 schema {
+  # query: Query
   mutation: Mutation
 }

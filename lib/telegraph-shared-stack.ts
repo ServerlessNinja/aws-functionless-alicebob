@@ -1,7 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
-import * as appsync from 'aws-cdk-lib/aws-appsync';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 
@@ -41,21 +40,6 @@ export class TelegraphSharedStack extends cdk.Stack {
       replicas: [
         { region: regions.alice }
       ],
-    });
-
-    // AppSync GraphQL API
-    const api = new appsync.GraphqlApi(this, 'TelegraphApi', {
-      name: 'TelegraphApi',
-      schema: appsync.SchemaFile.fromAsset('src/graphql/schema.graphql'),
-      authorizationConfig: {
-        defaultAuthorization: {
-          authorizationType: appsync.AuthorizationType.API_KEY,
-          apiKeyConfig: {
-            expires: cdk.Expiration.after(cdk.Duration.days(90))
-          }
-        }
-      },
-      xrayEnabled: true 
     });
 
     // CloudWatch Dashboard for EventBridge events
