@@ -1,0 +1,40 @@
+type Telegram {
+  from: UserName!
+  to: UserName!
+  address: String!
+  message: String!
+  createdAt: String
+}
+
+type TelegraphStation {
+  eventBusName: String!
+  region: String!
+  source: EventSource!
+  detailType: EventDetailType!
+  detail: Telegram!
+}
+
+enum UserName {
+  Bob
+  Alice
+}
+
+enum EventSource {
+  Telegraph
+}
+
+enum EventDetailType {
+  NewTelegram
+}
+
+# type Query {
+#    get(id: ID!): String!
+# }
+
+type Mutation {
+  composeTelegram(telegram: Telegram!): String!
+}
+
+schema {
+  mutation: Mutation
+}
