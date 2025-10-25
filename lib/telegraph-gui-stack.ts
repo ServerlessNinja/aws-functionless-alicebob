@@ -14,7 +14,7 @@ export class TelegraphGuiStack extends cdk.Stack {
     // AppSync GraphQL API
     const api = new appsync.GraphqlApi(this, "TelegraphApi", {
       name: "TelegraphApi",
-      schema: appsync.SchemaFile.fromAsset("src/graphql/schema.graphql"),
+      definition: appsync.Definition.fromFile("src/graphql/schema.graphql"),
       authorizationConfig: {
         defaultAuthorization: {
           authorizationType: appsync.AuthorizationType.API_KEY,
@@ -32,44 +32,19 @@ export class TelegraphGuiStack extends cdk.Stack {
       name: "TelegraphStation",
       description: "EventBridge Data Source for Telegraph API",
     });
+
     bus.grantPutEventsTo(dataSource);
 
     // AppSync API Resolver
-    dataSource.createResolver('SendEventResolver', {
+    dataSource.createResolver('TelegraphStationResolver', {
       typeName: 'Mutation',
       fieldName: 'sendTelegram',
-      requestMappingTemplate: appsync.MappingTemplate.fromString(`
-        {
-          "version": "2018-05-29",
-          "method": "POST",
-          "resourcePath": "/",
-          "params": {
-            "headers": {
-              "content-type": "application/x-amz-json-1.1",
-              "x-amz-target": "AWSEvents.PutEvents"
-            },
-            "body": {
-              "Entries": [
-                {
-                  "Source": "$ctx.args.source",
-                  "DetailType": "$ctx.args.detailType",
-                  "Detail": "$util.escapeJavaScript($util.toJson($ctx.args.detail))",
-                  "EventBusName": "$ctx.args.eventBus"
-                }
-              ]
-            }
-          }
-        }
-      `),
-      responseMappingTemplate: appsync.MappingTemplate.fromString(`
-        #set($statusCode = $ctx.result.statusCode)
-        #if($statusCode == 200)
-          $util.toJson(true)
-        #else
-          $util.error("Failed to put event", $ctx.result.body)
-        #end
-      `),
+      requestMappingTemplate: appsync.MappingTemplate.fromFile('src/graphql/eventbus-request.vtl'),
+      responseMappingTemplate: appsync.MappingTemplate.fromFile('src/graphql/eventbus-response.vtl'),
     });
+
+    // Add tags to selected resources for myApplications
+    cdk.Tags.of(api).add('cdk:filter', 'Demo');
 
   }
 }

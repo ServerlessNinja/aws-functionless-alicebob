@@ -1,0 +1,6 @@
+#set($statusCode = $ctx.result.statusCode)
+#if($statusCode == 200)
+  $util.toJson(true)
+#else
+  $util.error("Failed to put event", $ctx.result.body)
+#end
