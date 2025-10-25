@@ -15,15 +15,15 @@ export class TelegraphGuiStack extends cdk.Stack {
     const api = new appsync.GraphqlApi(this, "TelegraphApi", {
       name: "TelegraphApi",
       definition: appsync.Definition.fromFile("src/graphql/schema.graphql"),
+      xrayEnabled: true,
       authorizationConfig: {
         defaultAuthorization: {
           authorizationType: appsync.AuthorizationType.API_KEY,
           apiKeyConfig: {
             expires: cdk.Expiration.after(cdk.Duration.days(90)),
-          },
-        },
-      },
-      xrayEnabled: true,
+          }
+        }
+      }
     });
 
     // EventBridge data source for AppSync API
