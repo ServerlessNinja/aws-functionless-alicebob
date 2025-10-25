@@ -32,6 +32,7 @@ export class TelegraphGuiStack extends cdk.Stack {
       name: "TelegraphStation",
       description: "EventBridge Data Source for Telegraph API",
     });
+    bus.grantPutEventsTo(dataSource);
 
     // AppSync API Resolver
     dataSource.createResolver('SendEventResolver', {
