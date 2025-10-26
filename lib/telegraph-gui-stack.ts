@@ -37,19 +37,39 @@ export class TelegraphGuiStack extends cdk.Stack {
       this, "TelegraphStationBus", "TelegraphStation" + locations?.bob?.city
     );
 
-    const dataSource = api.addEventBridgeDataSource("EventBridgeDataSource", bus, {
+    const dataSourceBus = api.addEventBridgeDataSource("EventBridgeDataSource", bus, {
       name: "TelegraphStation" + locations.bob.city,
       description: "EventBridge Data Source for Telegraph API",
     });
 
-    bus.grantPutEventsTo(dataSource);
+    bus.grantPutEventsTo(dataSourceBus);
 
-    // AppSync API Resolver
-    dataSource.createResolver('TelegraphStationResolver', {
+    // EventBridge data source for DynamoDB
+    const table = cdk.aws_dynamodb.TableV2.fromTableName(
+      this, "TelegraphArchiveTable", "TelegraphArchive"
+    );
+
+    const dataSourceTable = api.addDynamoDbDataSource("DynamoDbDataSource", table, {
+      name: "TelegraphArchive",
+      description: "DynamoDB Data Source for Telegraph API",
+    });
+
+    table.grantReadData(dataSourceTable);
+
+    // AppSync API Resolver for EventBridge
+    dataSourceBus.createResolver('TelegraphStationResolver', {
       typeName: 'Mutation',
       fieldName: 'sendTelegram',
-      requestMappingTemplate: appsync.MappingTemplate.fromFile('src/graphql/eventbus-request.vtl'),
-      responseMappingTemplate: appsync.MappingTemplate.fromFile('src/graphql/eventbus-response.vtl'),
+      requestMappingTemplate: appsync.MappingTemplate.fromFile('src/graphql/eventbridge-request.vtl'),
+      responseMappingTemplate: appsync.MappingTemplate.fromFile('src/graphql/eventbridge-response.vtl'),
+    });
+
+    // AppSync API Resolver for DynamoDB
+    dataSourceTable.createResolver('TelegraphArchiveResolver', {
+      typeName: 'Query',
+      fieldName: 'getTelegram',
+      requestMappingTemplate: appsync.MappingTemplate.fromFile('src/graphql/dynamodb-request.vtl'),
+      responseMappingTemplate: appsync.MappingTemplate.fromFile('src/graphql/dynamodb-response.vtl'),
     });
 
     // Add tags to selected resources for myApplications

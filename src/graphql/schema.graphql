@@ -3,12 +3,50 @@ schema {
   mutation: Mutation
 }
 
+# Query definition for fetching DynamoDB item by ID
+
 type Query {
-  _empty: String
+  getTelegram(telegram_id: String!): TelegraphArchive
 }
 
+type TelegraphArchive {
+  telegram_id: String!
+  from: UserItem
+  to: UserItem
+  message: MessageItem
+  reaction: String
+  category: String
+  delivery_status: String
+  cost: CostItem
+  created_at: String
+  updated_at: String
+}
+
+type UserItem {
+  name: String
+  address: String
+}
+
+type MessageItem {
+  original: String
+  translated: String
+}
+
+type CostItem {
+  charges: String
+  payment: String
+  service_level: ServiceLevel
+}
+
+enum ServiceLevel {
+  EXPRESS
+  STANDARD
+}
+
+# Mutation definition for sending events to EventBridge bus
+
 type Mutation {
-  sendTelegram(telegraph: TelegraphInput!): AWSJSON
+  sendTelegram(telegraph: TelegraphInput!): EventItem
 }
 
 input TelegraphInput {
@@ -26,6 +64,10 @@ input TelegramInput {
   translate: Language!
 }
 
+type EventItem {
+  EventId: String
+}
+
 enum EventSource {
   Telegraph
 }
@@ -35,8 +77,8 @@ enum EventDetailType {
 }
 
 enum Category {
-  PERSONAL
   BUSINESS
+  PERSONAL
 }
 
 enum Priority {

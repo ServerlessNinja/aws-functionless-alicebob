@@ -1,0 +1,8 @@
+## DynamoDB GetItem request mapping template
+{
+  "version": "2017-02-28",
+  "operation": "GetItem",
+  "key": {
+    "telegram_id": $util.dynamodb.toDynamoDBJson($ctx.args.telegram_id),
+  }
+}
