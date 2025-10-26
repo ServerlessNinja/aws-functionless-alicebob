@@ -11,13 +11,14 @@ States:
       to_name: "{% $states.input.to %}"
       message: "{% $states.input.message %}"
       category: "{% $states.input.category %}"
+      language: "{% $states.input.translate %}"
   Convert Telegram:
     Type: Pass
     Next: Check Priority
     Assign:
       word_count: "{% $count($split($message, ' ')) %}"
       message: "{% $uppercase($replace($message, '.', ' STOP')) %}"
-      language: fr
+      language: "{% $lowercase($language) %}"
   Check Priority:
     Type: Choice
     Default: Standard Counter

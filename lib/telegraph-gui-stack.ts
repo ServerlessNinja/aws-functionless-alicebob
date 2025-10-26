@@ -3,6 +3,7 @@ import { Construct } from "constructs";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as appsync from "aws-cdk-lib/aws-appsync";
 import { StringParameter } from "aws-cdk-lib/aws-ssm";
+import { RetentionDays } from "aws-cdk-lib/aws-logs";
 
 export class TelegraphGuiStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -16,20 +17,28 @@ export class TelegraphGuiStack extends cdk.Stack {
       name: "TelegraphApi",
       definition: appsync.Definition.fromFile("src/graphql/schema.graphql"),
       xrayEnabled: true,
+      logConfig: {
+        fieldLogLevel: appsync.FieldLogLevel.ALL,
+        excludeVerboseContent: true,
+        retention: RetentionDays.ONE_WEEK,
+      },
       authorizationConfig: {
         defaultAuthorization: {
           authorizationType: appsync.AuthorizationType.API_KEY,
           apiKeyConfig: {
-            expires: cdk.Expiration.after(cdk.Duration.days(90)),
+            expires: cdk.Expiration.after(cdk.Duration.days(30)),
           }
         }
       }
     });
 
     // EventBridge data source for AppSync API
-    const bus = cdk.aws_events.EventBus.fromEventBusName(this, "TelegraphStationBus", "TelegraphStation");
+    const bus = cdk.aws_events.EventBus.fromEventBusName(
+      this, "TelegraphStationBus", "TelegraphStation" + locations?.bob?.city
+    );
+
     const dataSource = api.addEventBridgeDataSource("EventBridgeDataSource", bus, {
-      name: "TelegraphStation",
+      name: "TelegraphStation" + locations.bob.city,
       description: "EventBridge Data Source for Telegraph API",
     });
 
