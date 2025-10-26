@@ -1,6 +1,16 @@
-#set($statusCode = $ctx.result.statusCode)
-#if($statusCode == 200)
-  $util.toJson(true)
-#else
-  $util.error("Failed to put event", $ctx.result.body)
+## Handle internal resolver errors
+#if($ctx.error)
+  $util.error($ctx.error.message, $ctx.error.type)
 #end
+
+## Handle EventBridge PutEvents result
+#if($ctx.result.FailedEntryCount > 0)
+  #set($entry = $ctx.result.Entries[0])
+  $util.error(
+    "EventBridge failed to emit event. ErrorCode: $entry.ErrorCode, Message: $entry.ErrorMessage",
+    "EventBridgePutEventError"
+  )
+#end
+
+## Return EventId as string
+$util.toJson($ctx.result.Entries[0])

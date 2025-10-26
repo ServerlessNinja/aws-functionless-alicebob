@@ -1,21 +1,37 @@
-type Telegram {
-  from: UserName!
-  to: UserName!
-  message: String!
-  category: Category!
-  priority: Priority
+schema {
+  query: Query
+  mutation: Mutation
 }
 
-type TelegraphStation {
-  eventBus: String!
+type Query {
+  _empty: String
+}
+
+type Mutation {
+  sendTelegram(telegraph: TelegraphInput!): AWSJSON
+}
+
+input TelegraphInput {
   source: EventSource!
   detailType: EventDetailType!
-  detail: Telegram!
+  detail: TelegramInput!
 }
 
-enum UserName {
-  Bob
-  Alice
+input TelegramInput {
+  from: String!
+  to: String!
+  message: String!
+  category: Category!
+  priority: Priority!
+  translate: Language!
+}
+
+enum EventSource {
+  Telegraph
+}
+
+enum EventDetailType {
+  ComposeTelegram
 }
 
 enum Category {
@@ -28,24 +44,6 @@ enum Priority {
   URGENT
 }
 
-enum EventSource {
-  Telegraph
-}
-
-enum EventDetailType {
-  NewTelegram
-}
-
-# type Query {
-#    get(id: ID!): String!
-# }
-
-type Mutation {
-  # composeTelegram(telegram: Telegram!): String!
-  sendTelegram(telegraphStation: TelegraphStation!): String!
-}
-
-schema {
-  # query: Query
-  mutation: Mutation
+enum Language {
+  FR
 }

@@ -1,21 +1,10 @@
+## EventBridge PutEvents request mapping template
 {
   "version": "2018-05-29",
-  "method": "POST",
-  "resourcePath": "/",
-  "params": {
-    "headers": {
-      "content-type": "application/x-amz-json-1.1",
-      "x-amz-target": "AWSEvents.PutEvents"
-    },
-    "body": $util.toJson({
-      "Entries": [
-        {
-          "Source": "$ctx.args.source",
-          "DetailType": "$ctx.args.detailType",
-          "Detail": "$util.toJson($ctx.args.detail)",
-          "EventBusName": "$ctx.args.eventBus"
-        }
-      ]
-    })
-  }
+  "operation": "PutEvents",
+  "events": [{
+    "source": $util.toJson($context.arguments.telegraph.source),
+    "detailType": $util.toJson($context.arguments.telegraph.detailType),
+    "detail": $util.toJson($context.arguments.telegraph.detail),
+  }]
 }
