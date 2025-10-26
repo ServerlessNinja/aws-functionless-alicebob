@@ -11,25 +11,27 @@ export class TelegraphAliceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    const locations = this.node.tryGetContext('locations');
+
     // EventBridge event bus
-    const bus = new events.EventBus(this, 'TelegraphStationBus', {
-      eventBusName: 'TelegraphStation',
+    const bus = new events.EventBus(this, 'TelegraphBus', {
+      eventBusName: 'TelegraphStation' + locations?.alice?.city,
       description: 'Event bus for Telegraph Station',
     });
 
     // EventBridge archive for custom event bus
-    const archive = new events.Archive(this, 'TelegraphStationArchive', {
+    const archive = new events.Archive(this, 'TelegraphArchive', {
       sourceEventBus: bus,
       eventPattern: {
         source: [ "Telegraph" ]
       },
-      archiveName: 'TelegraphStation',
+      archiveName: 'TelegraphStation' + locations?.alice?.city,
       description: 'Archive for Telegraph Station event bus',
       retention: cdk.Duration.days(30),
     });
 
     // Secrets Manager secret object
-    const secret = new secrets.Secret(this, 'PersonalDiarySecret', {
+    const secret = new secrets.Secret(this, 'PersonalDiary', {
       secretName: 'PersonalDiary',
       description: 'Personal diary of Alice',
       removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -51,7 +53,7 @@ export class TelegraphAliceStack extends cdk.Stack {
     });
 
     // Step Functions state machine
-    const machine = new states.StateMachine(this, 'TransmissionAliceStateMachine', {
+    const machine = new states.StateMachine(this, 'TransmissionStateMachine', {
       stateMachineName: 'TransmissionAlice',
       definitionBody: states.DefinitionBody.fromFile('src/state-machines/transmission-alice.asl.yaml'),
       definitionSubstitutions: {
@@ -63,7 +65,7 @@ export class TelegraphAliceStack extends cdk.Stack {
       timeout: cdk.Duration.minutes(5),
       tracingEnabled: true,
       logs: {
-        destination: new logs.LogGroup(this, 'TransmissionAliceMachineLogs', {
+        destination: new logs.LogGroup(this, 'TransmissionLogs', {
           logGroupName: '/aws/states/TransmissionAlice',
           removalPolicy: cdk.RemovalPolicy.DESTROY
         }),
@@ -85,9 +87,9 @@ export class TelegraphAliceStack extends cdk.Stack {
           "sqs:SendMessage",
         ],
         resources: [
-          `arn:aws:dynamodb:*:${this.account}:table/TelegraphArchive`,
+          `arn:aws:dynamodb:*:${this.account}:table/TelegraphArchive*`,
           `arn:aws:ssm:*:${this.account}:parameter/AddressBook/*`,
-          `arn:aws:events:*:${this.account}:event-bus/TelegraphStation`,
+          `arn:aws:events:*:${this.account}:event-bus/TelegraphStation*`,
           `arn:aws:secretsmanager:*:${this.account}:secret:PersonalDiary*`,
           queue.queueArn,
         ],
@@ -108,13 +110,13 @@ export class TelegraphAliceStack extends cdk.Stack {
     )
 
     // CloudWatch log group for EventBridge events
-    const logGroup = new logs.LogGroup(this, 'TelegraphEventsLogGroup', {
+    const logGroup = new logs.LogGroup(this, 'TelegraphLogs', {
       logGroupName: '/aws/events/TelegraphStation',
       removalPolicy: cdk.RemovalPolicy.DESTROY
     });
 
     // EventBridge event rule to trigger state machine
-    new events.Rule(this, 'ReceiveTelegramRule', {
+    new events.Rule(this, 'ReceivedRule', {
       ruleName: 'ReceiveTelegram',
       description: 'Start execution of state machine TransmissionAlice',
       eventBus: bus,
@@ -131,7 +133,7 @@ export class TelegraphAliceStack extends cdk.Stack {
     });
 
     // EventBridge event rule to send local events to CloudWatch Logs
-    new events.Rule(this, 'TelegramDeliveredRule', {
+    new events.Rule(this, 'DeliveredRule', {
       ruleName: 'TelegramDelivered',
       description: 'Log events related to received telegrams',
       eventBus: bus,

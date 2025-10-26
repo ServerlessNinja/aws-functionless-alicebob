@@ -24,7 +24,7 @@ export class TelegraphSharedStack extends cdk.Stack {
     });
 
     // DynamoDB global table
-    const table = new dynamodb.TableV2(this, 'TelegraphArchiveTable', {
+    const table = new dynamodb.TableV2(this, 'TelegraphTable', {
       tableName: 'TelegraphArchive',
       partitionKey: { 
         name: 'telegram_id',
