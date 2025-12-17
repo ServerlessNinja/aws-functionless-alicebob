@@ -6,6 +6,7 @@
     "to": "Alice",
     "message": "Hello darling. Coming to Paris next week. I cannot wait for our dinner date!",
     "category": "PERSONAL",
-    "priority": "URGENT"
+    "priority": "URGENT",
+    "translate": "FR"
   }
 }
