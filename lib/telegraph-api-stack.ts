@@ -18,7 +18,7 @@ export class TelegraphApiStack extends cdk.Stack {
       xrayEnabled: true,
       logConfig: {
         fieldLogLevel: appsync.FieldLogLevel.DEBUG,
-        excludeVerboseContent: false,
+        excludeVerboseContent: true,
         retention: RetentionDays.ONE_WEEK,
         role: new cdk.aws_iam.Role(this, 'AppSyncLogRole', {
           assumedBy: new cdk.aws_iam.ServicePrincipal('appsync.amazonaws.com'),
@@ -29,10 +29,7 @@ export class TelegraphApiStack extends cdk.Stack {
       },
       authorizationConfig: {
         defaultAuthorization: {
-          authorizationType: appsync.AuthorizationType.API_KEY,
-          apiKeyConfig: {
-            expires: cdk.Expiration.after(cdk.Duration.days(30)),
-          }
+          authorizationType: appsync.AuthorizationType.IAM
         }
       }
     });
@@ -43,7 +40,7 @@ export class TelegraphApiStack extends cdk.Stack {
     );
 
     const dataSourceBus = api.addEventBridgeDataSource("EventBridgeDataSource", bus, {
-      name: "TelegraphStation" + locations.bob.city,
+      name: "TelegraphStation" + locations?.bob?.city,
       description: "EventBridge Data Source for Telegraph API",
     });
 

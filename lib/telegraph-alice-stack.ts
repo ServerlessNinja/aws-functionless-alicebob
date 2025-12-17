@@ -20,12 +20,12 @@ export class TelegraphAliceStack extends cdk.Stack {
     });
 
     // EventBridge archive for custom event bus
-    const archive = new events.Archive(this, 'TelegraphArchive', {
+    const archive = new events.Archive(this, 'TelegraphEventArchive', {
       sourceEventBus: bus,
       eventPattern: {
         source: [ "Telegraph" ]
       },
-      archiveName: 'TelegraphStation' + locations?.alice?.city,
+      archiveName: 'TelegraphEventArchive' + locations?.alice?.city,
       description: 'Archive for Telegraph Station event bus',
       retention: cdk.Duration.days(30),
     });
