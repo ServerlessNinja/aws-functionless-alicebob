@@ -1,11 +1,9 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
-import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import * as appsync from "aws-cdk-lib/aws-appsync";
-import { StringParameter } from "aws-cdk-lib/aws-ssm";
 import { RetentionDays } from "aws-cdk-lib/aws-logs";
 
-export class TelegraphGuiStack extends cdk.Stack {
+export class TelegraphApiStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 

@@ -3,7 +3,7 @@ import * as cdk from 'aws-cdk-lib';
 import { TelegraphSharedStack } from '../lib/telegraph-shared-stack';
 import { TelegraphAliceStack } from '../lib/telegraph-alice-stack';
 import { TelegraphBobStack } from '../lib/telegraph-bob-stack';
-import { TelegraphGuiStack } from '../lib/telegraph-gui-stack';
+import { TelegraphApiStack } from '../lib/telegraph-api-stack';
 
 const app = new cdk.App();
 const regions = app.node.tryGetContext('regions');
@@ -24,7 +24,7 @@ const bobStack = new TelegraphBobStack(app, 'TelegraphBobStack', {
 });
 
 // Define GUI stack (#4)
-const guiStack = new TelegraphGuiStack(app, 'TelegraphGuiStack', {
+const apiStack = new TelegraphApiStack(app, 'TelegraphApiStack', {
   env: { region: regions.bob }
 });
 
@@ -32,10 +32,10 @@ const guiStack = new TelegraphGuiStack(app, 'TelegraphGuiStack', {
 aliceStack.addDependency(sharedStack);
 bobStack.addDependency(sharedStack);
 bobStack.addDependency(aliceStack);
-guiStack.addDependency(bobStack);
+apiStack.addDependency(bobStack);
 
 // Add tags to stacks and resources
 cdk.Tags.of(sharedStack).add('cdk:stack', 'Shared');
 cdk.Tags.of(aliceStack).add('cdk:stack', 'Alice');
 cdk.Tags.of(bobStack).add('cdk:stack', 'Bob');
-cdk.Tags.of(guiStack).add('cdk:stack', 'GUI');
+cdk.Tags.of(apiStack).add('cdk:stack', 'API');
