@@ -94,7 +94,10 @@ export class TelegraphBobStack extends cdk.Stack {
       enabled: true,
       targets: [
         new targets.SfnStateMachine(machine, {
-          input: events.RuleTargetInput.fromEventPath('$.detail')
+          input: events.RuleTargetInput.fromObject({
+            eventId: events.EventField.fromPath('$.id'),
+            payload: events.EventField.fromPath('$.detail'),
+          })
         })
       ]
     });

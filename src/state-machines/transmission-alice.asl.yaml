@@ -65,8 +65,7 @@ States:
     Type: Task
     Arguments:
       SecretId: ${SECRET_ARN}
-      SecretString: '{% $string({ "Who": $from_name, "When": $received_at, "What":
-        $message, "Note": $reaction }, true) %}'
+      SecretString: '{% $string({ "Who": $from_name, "When": $received_at, "What": $message, "Note": $reaction }, true) %}'
     Resource: arn:aws:states:::aws-sdk:secretsmanager:putSecretValue
     Next: Notify Telegraph
     Catch:
