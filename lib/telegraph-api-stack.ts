@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as appsync from "aws-cdk-lib/aws-appsync";
+import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
 import { RetentionDays } from "aws-cdk-lib/aws-logs";
 
 export class TelegraphApiStack extends cdk.Stack {
@@ -16,9 +17,15 @@ export class TelegraphApiStack extends cdk.Stack {
       definition: appsync.Definition.fromFile("src/graphql/schema.graphql"),
       xrayEnabled: true,
       logConfig: {
-        fieldLogLevel: appsync.FieldLogLevel.ALL,
-        excludeVerboseContent: true,
+        fieldLogLevel: appsync.FieldLogLevel.DEBUG,
+        excludeVerboseContent: false,
         retention: RetentionDays.ONE_WEEK,
+        role: new cdk.aws_iam.Role(this, 'AppSyncLogRole', {
+          assumedBy: new cdk.aws_iam.ServicePrincipal('appsync.amazonaws.com'),
+          managedPolicies: [
+            cdk.aws_iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSAppSyncPushToCloudWatchLogs')
+          ]
+        })
       },
       authorizationConfig: {
         defaultAuthorization: {
@@ -68,6 +75,42 @@ export class TelegraphApiStack extends cdk.Stack {
       fieldName: 'getTelegram',
       requestMappingTemplate: appsync.MappingTemplate.fromFile('src/graphql/dynamodb-request.vtl'),
       responseMappingTemplate: appsync.MappingTemplate.fromFile('src/graphql/dynamodb-response.vtl'),
+    });
+
+    // WAFv2 Web ACL for AppSync API
+    const webAcl = new wafv2.CfnWebACL(this, 'TelegraphApiWebACL', {
+      name: 'TelegraphApiWebACL',
+      defaultAction: { allow: {} },
+      scope: 'REGIONAL',
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        metricName: 'TelegraphApiWebACL',
+        sampledRequestsEnabled: true,
+      },
+      rules: [
+        {
+          name: 'AWS-AWSManagedRulesCommonRuleSet',
+          priority: 1,
+          overrideAction: { none: {} },
+          statement: {
+            managedRuleGroupStatement: {
+              name: 'AWSManagedRulesCommonRuleSet',
+              vendorName: 'AWS',
+            },
+          },
+          visibilityConfig: {
+            cloudWatchMetricsEnabled: true,
+            metricName: 'AWSManagedRulesCommonRuleSet',
+            sampledRequestsEnabled: true,
+          },
+        },
+      ],
+    });
+
+    // Associate WAFv2 Web ACL with AppSync API
+    new wafv2.CfnWebACLAssociation(this, 'TelegraphApiWebACLAssociation', {
+      resourceArn: api.arn,
+      webAclArn: webAcl.attrArn,
     });
 
     // Add tags to selected resources for myApplications
