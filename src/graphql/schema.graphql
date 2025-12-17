@@ -16,6 +16,7 @@ type TelegraphArchive {
   message: MessageItem
   reaction: String
   category: String
+  priority: String
   delivery_status: String
   cost: CostItem
   created_at: String
