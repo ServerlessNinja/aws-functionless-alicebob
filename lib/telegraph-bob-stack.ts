@@ -11,26 +11,27 @@ export class TelegraphBobStack extends cdk.Stack {
     super(scope, id, props);
 
     const regions = this.node.tryGetContext('regions');
+    const locations = this.node.tryGetContext('locations');
 
     // EventBridge custom event bus
-    const bus = new events.EventBus(this, 'TelegraphStationBus', {
-      eventBusName: 'TelegraphStation',
+    const bus = new events.EventBus(this, 'TelegraphBus', {
+      eventBusName: 'TelegraphStation' + locations?.bob?.city,
       description: 'Event bus for Telegraph Station',
     });
 
     // EventBridge archive for custom event bus
-    const archive = new events.Archive(this, 'TelegraphStationArchive', {
+    const archive = new events.Archive(this, 'TelegraphEventArchive', {
       sourceEventBus: bus,
       eventPattern: {
-        source: [ "Telegraph" ],
+        source: [ "Telegraph" ]
       },
-      archiveName: 'TelegraphStation',
+      archiveName: 'TelegraphEventArchive' + locations?.bob?.city,
       description: 'Archive for Telegraph Station event bus',
       retention: cdk.Duration.days(30),
     });
 
     // Step Functions state machine
-    const machine = new states.StateMachine(this, 'TransmissionBobStateMachine', {
+    const machine = new states.StateMachine(this, 'TransmissionStateMachine', {
       stateMachineName: 'TransmissionBob',
       definitionBody: states.DefinitionBody.fromFile('src/state-machines/transmission-bob.asl.yaml'),
       definitionSubstitutions: {
@@ -40,7 +41,7 @@ export class TelegraphBobStack extends cdk.Stack {
       timeout: cdk.Duration.minutes(5),
       tracingEnabled: true,
       logs: {
-        destination: new logs.LogGroup(this, 'TransmissionBobStateMachineLogs', {
+        destination: new logs.LogGroup(this, 'TransmissionLogs', {
           logGroupName: '/aws/states/TransmissionBob',
           removalPolicy: cdk.RemovalPolicy.DESTROY
         }),
@@ -59,9 +60,9 @@ export class TelegraphBobStack extends cdk.Stack {
           "events:PutEvents",
         ],
         resources: [
-          `arn:aws:dynamodb:*:${this.account}:table/TelegraphArchive`,
+          `arn:aws:dynamodb:*:${this.account}:table/TelegraphArchive*`,
           `arn:aws:ssm:*:${this.account}:parameter/AddressBook/*`,
-          `arn:aws:events:*:${this.account}:event-bus/TelegraphStation`,
+          `arn:aws:events:*:${this.account}:event-bus/TelegraphStation*`,
         ],
       })
     );
@@ -82,7 +83,7 @@ export class TelegraphBobStack extends cdk.Stack {
     )
 
     // EventBridge event rule to trigger state machine execution
-    new events.Rule(this, 'ComposeTelegramRule', {
+    new events.Rule(this, 'ComposeRule', {
       ruleName: 'ComposeTelegram',
       description: 'Start execution of state machine TransmissionBob',
       eventBus: bus,
@@ -93,19 +94,22 @@ export class TelegraphBobStack extends cdk.Stack {
       enabled: true,
       targets: [
         new targets.SfnStateMachine(machine, {
-          input: events.RuleTargetInput.fromEventPath('$.detail')
+          input: events.RuleTargetInput.fromObject({
+            eventId: events.EventField.fromPath('$.id'),
+            payload: events.EventField.fromPath('$.detail'),
+          })
         })
       ]
     });
 
     // CloudWatch log group for EventBridge events
-    const logGroup = new logs.LogGroup(this, 'TelegraphStationEventsLogGroup', {
+    const logGroup = new logs.LogGroup(this, 'TelegraphLogs', {
       logGroupName: '/aws/events/TelegraphStation',
       removalPolicy: cdk.RemovalPolicy.DESTROY
     });
 
     // EventBridge event rule to send events to remote event bus
-    new events.Rule(this, 'TransmitTelegramRule', {
+    new events.Rule(this, 'TransmitRule', {
       ruleName: 'TransmitTelegram',
       description: 'Send events to remote event bus (cross-region)',
       eventBus: bus,
@@ -117,8 +121,8 @@ export class TelegraphBobStack extends cdk.Stack {
       targets: [
         new targets.CloudWatchLogGroup(logGroup),
         new targets.EventBus(
-          events.EventBus.fromEventBusArn(this, 'TelegraphStation2', 
-            `arn:aws:events:${regions.alice}:${this.account}:event-bus/TelegraphStation`
+          events.EventBus.fromEventBusArn(this, 'TelegraphBusRemote', 
+            `arn:aws:events:${regions.alice}:${this.account}:event-bus/TelegraphStation${locations?.alice?.city}`
           )
         )
       ]

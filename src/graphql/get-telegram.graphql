@@ -1,0 +1,28 @@
+query GetTelegram {
+  getTelegram(telegram_id: "<EventId>") {
+    telegram_id
+    category
+    priority
+    created_at
+    from {
+      address
+      name
+    }
+    to {
+      name
+      address
+    }
+    message {
+      original
+      translated
+    }
+    cost {
+      charges
+      service_level
+      payment
+    }
+    delivery_status
+    updated_at
+    reaction
+  }
+}

@@ -1,0 +1,10 @@
+## EventBridge PutEvents request mapping template
+{
+  "version": "2018-05-29",
+  "operation": "PutEvents",
+  "events": [{
+    "source": $util.toJson($context.arguments.telegraph.source),
+    "detailType": $util.toJson($context.arguments.telegraph.detailType),
+    "detail": $util.toJson($context.arguments.telegraph.detail),
+  }]
+}

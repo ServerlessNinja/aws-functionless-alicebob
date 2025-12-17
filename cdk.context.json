@@ -12,5 +12,9 @@
       "city": "Paris",
       "address": "47 Avenue des Champs-Élysées, 75008 Paris, France"
     }
-  }
+  },
+  "cli-telemetry": false,
+  "acknowledged-issue-numbers": [
+    34892
+  ]
 }

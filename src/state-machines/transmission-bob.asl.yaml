@@ -7,23 +7,25 @@ States:
     Type: Pass
     Next: Convert Telegram
     Assign:
-      from_name: "{% $states.input.from %}"
-      to_name: "{% $states.input.to %}"
-      message: "{% $states.input.message %}"
-      category: "{% $states.input.category %}"
+      event_id: "{% $states.input.eventId %}"
+      from_name: "{% $states.input.payload.from %}"
+      to_name: "{% $states.input.payload.to %}"
+      message: "{% $states.input.payload.message %}"
+      category: "{% $states.input.payload.category %}"
+      language: "{% $states.input.payload.translate %}"
   Convert Telegram:
     Type: Pass
     Next: Check Priority
     Assign:
       word_count: "{% $count($split($message, ' ')) %}"
       message: "{% $uppercase($replace($message, '.', ' STOP')) %}"
-      language: fr
+      language: "{% $lowercase($language) %}"
   Check Priority:
     Type: Choice
     Default: Standard Counter
     Choices:
       - Next: Express Counter
-        Condition: '{% ($states.input.priority) = ("URGENT") %}'
+        Condition: '{% ($states.input.payload.priority) = ("URGENT") %}'
   Express Counter:
     Type: Pass
     Next: Search Address Book
@@ -84,12 +86,11 @@ States:
     Type: Pass
     Next: Save in Telegram Archive
     Assign:
+      telegram_id: "{% $event_id %}"
       document_type: TELEGRAM
       status: TRANSMITTED
-      telegram_id: "{% $uuid() %}"
       created_at: "{% $states.context.State.EnteredTime %}"
-      charges: "{% $currency & $string(($price_per_word * $word_count) +
-        ($translation)) %}"
+      charges: "{% $currency & $string(($price_per_word * $word_count) + ($translation)) %}"
       payment: CASH
   Fail:
     Type: Fail
@@ -142,7 +143,7 @@ States:
               S: "{% $translated %}"
         cost:
           M:
-            serviceLevel:
+            service_level:
               S: "{% $service_level %}"
             charges:
               S: "{% $charges %}"

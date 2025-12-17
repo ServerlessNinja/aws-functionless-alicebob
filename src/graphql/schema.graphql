@@ -1,0 +1,92 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+# Query definition for fetching DynamoDB item by ID
+
+type Query {
+  getTelegram(telegram_id: String!): TelegraphArchive
+}
+
+type TelegraphArchive {
+  telegram_id: String!
+  from: UserItem
+  to: UserItem
+  message: MessageItem
+  reaction: String
+  category: String
+  priority: String
+  delivery_status: String
+  cost: CostItem
+  created_at: String
+  updated_at: String
+}
+
+type UserItem {
+  name: String
+  address: String
+}
+
+type MessageItem {
+  original: String
+  translated: String
+}
+
+type CostItem {
+  charges: String
+  payment: String
+  service_level: ServiceLevel
+}
+
+enum ServiceLevel {
+  EXPRESS
+  STANDARD
+}
+
+# Mutation definition for sending events to EventBridge bus
+
+type Mutation {
+  sendTelegram(telegraph: TelegraphInput!): EventItem
+}
+
+input TelegraphInput {
+  source: EventSource!
+  detailType: EventDetailType!
+  detail: TelegramInput!
+}
+
+input TelegramInput {
+  from: String!
+  to: String!
+  message: String!
+  category: Category!
+  priority: Priority!
+  translate: Language!
+}
+
+type EventItem {
+  EventId: String
+}
+
+enum EventSource {
+  Telegraph
+}
+
+enum EventDetailType {
+  ComposeTelegram
+}
+
+enum Category {
+  BUSINESS
+  PERSONAL
+}
+
+enum Priority {
+  NORMAL
+  URGENT
+}
+
+enum Language {
+  FR
+}

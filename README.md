@@ -16,11 +16,12 @@ Alice and Bob both work for The Company. Alice is based in Paris and Bob is base
 
 ## Components
 
-This CDK application deploys 3 CDK stacks in 2 regions:
+This CDK application deploys 4 CDK stacks in 2 regions:
 
-- SharedResourcesStack (primary region)
-- SuperPostPrimaryStack (primary region)
-- SuperPostSecondaryStack (secondary region)
+- TelegraphSharedStack (primary region)
+- TelegraphBobStack (primary region)
+- TelegraphAliceStack (secondary region)
+- TelegraphApiStack (primary region)
 
 Application consists of the following AWS resources:
 
@@ -33,6 +34,9 @@ Application consists of the following AWS resources:
 - CloudWatch log groups
 - CloudWatch dashboard
 - S3 bucket
+- AppSync GraphQL API
+- AppSync GraphQL resolvers (VTL)
+- WAF WebACL
 
 ## Context
 
@@ -44,26 +48,26 @@ Modify the `cdk.context.json` file to change deployment regions:
     "bob": "eu-west-2",
     "alice": "eu-west-3"
   }
+  ...
 }
 ```
 
 ## Start Engine
 
-To start execution of state machines generate a custom EventBridge event in primary region. See sample event file:
+To start the application use either AppSync or EventBridge on AWS Management Console. A custom event will be emitted to custom bus, which will trigger execution of the Bob's state machine.
 
-[compose-telegram.json](src/events/compose-telegram.json)
+### EventBridge
 
-Event detail structure:
+Send an event on the custom bus in the primary region. 
 
-```
-{
-  "from": "Bob",
-  "to": "Alice",
-  "message": "Some message to send as a telegram. It will get converted to telegram format.",
-  "category": "PERSONAL | BUSINESS",
-  "priority": "URGENT | STANDARD"
-}
-```
+* Sample event: [send-telegram.json](src/events/send-telegram.json)
+
+### GraphQL API
+
+Call the `sendTelegram` GraphQL mutation to generate a custom EventBridge event in primary region. A custom event will be emitted to custom bus, which will trigger execution of the Bob's state machine.
+
+* Sample mutation: [send-telegram.graphql](src/graphql/send-telegram.graphql)
+* Sample query: [get-telegram.graphql](src/graphql/get-telegram.graphql)
 
 ## Useful commands
 

@@ -1,0 +1,16 @@
+## Handle internal resolver errors
+#if($ctx.error)
+  $util.error($ctx.error.message, $ctx.error.type)
+#end
+
+## Handle EventBridge PutEvents result
+#if($ctx.result.FailedEntryCount > 0)
+  #set($entry = $ctx.result.Entries[0])
+  $util.error(
+    "EventBridge failed to emit event. ErrorCode: $entry.ErrorCode, Message: $entry.ErrorMessage",
+    "EventBridgePutEventError"
+  )
+#end
+
+## Return EventId as string
+$util.toJson($ctx.result.Entries[0])
